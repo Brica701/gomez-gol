@@ -129,10 +129,11 @@
         <div class="tab-pane fade show active" id="tab-usuarios">
             <div class="card card-admin p-4 mb-4 border-0">
                 <h5 class="mb-4 fw-bold text-info-bold"><i class="fas fa-user-plus me-2"></i>Nuevo Jugador</h5>
-                <form action="/admin/usuarios/add" method="POST" class="row g-3">
+                <!-- Formulario editado con ID y autocomplete off -->
+                <form id="formNuevoUsuario" action="/admin/usuarios/add" method="POST" class="row g-3" autocomplete="off">
                     <div class="col-md-4"><input type="text" name="nombre" class="form-control input-dark py-2" placeholder="Nombre" required></div>
                     <div class="col-md-3"><input type="password" name="password" class="form-control input-dark py-2" placeholder="Password Temporal" required></div>
-                    <div class="col-md-3"><input type="number" name="creditos" class="form-control input-dark py-2" value="1000" placeholder="Créditos"></div>
+                    <div class="col-md-3"><input type="number" name="creditos" class="form-control input-dark py-2" value="2000" placeholder="Créditos"></div>
                     <div class="col-md-2"><button type="submit" class="btn btn-info w-100 fw-bold py-2 text-white">Registrar</button></div>
                 </form>
             </div>
@@ -248,6 +249,16 @@
 <script>
     const socket = io();
     socket.on('update_porra', () => location.reload());
+
+    // Script de limpieza para el formulario de nuevo usuario
+    const formNuevo = document.getElementById('formNuevoUsuario');
+    if (formNuevo) {
+        formNuevo.addEventListener('submit', function() {
+            setTimeout(() => {
+                this.reset();
+            }, 100);
+        });
+    }
 </script>
 </body>
 </html>
