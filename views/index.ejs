@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gomez-Gol Pro | 2026</title>
+  <link rel="icon" href="data:,">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #28a745;
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+
+    body {
+      background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+      url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      min-height: 100vh; color: #ffffff !important;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important; }
+
+    .navbar {
+      background: rgba(0, 0, 0, 0.8) !important;
+      backdrop-filter: blur(15px);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+    }
+
+    .partidos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .vs-circle {
+      width: 32px; height: 32px; background: var(--primary-color);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; margin: 0 auto; font-size: 0.65rem;
+    }
+
+    .form-control-mobile {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important; border-radius: 10px; text-align: center;
+    }
+
+    .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
+
+    /* --- ESTILOS CHAT --- */
+    #chat-container {
+      position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
+      z-index: 1050; display: none; flex-direction: column;
+      border-radius: 20px; overflow: hidden;
+    }
+    #chat-messages { height: 390px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; }
+    .msg { max-width: 85%; padding: 8px 12px; border-radius: 15px; font-size: 0.85rem; position: relative; margin-bottom: 8px; color: white !important; }
+    .msg-others { align-self: flex-start; background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
+    .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px; }
+    .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8; color: #38bdf8 !important; }
+    .btn-del { position: absolute; top: -5px; right: -5px; cursor: pointer; display: none; }
+    .msg:hover .btn-del { display: block; }
+
+    @media (max-width: 576px) {
+      #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark sticky-top shadow">
+  <div class="container d-flex justify-content-between align-items-center">
+    <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
+    <div class="d-flex align-items-center gap-2">
+      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
+        <i class="fas fa-globe me-1"></i> General
+      </button>
+      <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
+        <i class="fas fa-coins text-warning me-1"></i> <%= user.creditos %>
+      </div>
+      <% if (user.rol === 'admin') { %>
+        <a href="/admin" class="ms-1 text-white"><i class="fas fa-user-shield fs-5"></i></a>
+      <% } %>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-3 mb-5">
+  <div class="row g-4">
+    <div class="col-lg-9">
+      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Próximas Jornadas</h5>
+      <div class="partidos-grid">
+        <% partidos.forEach(partido => { %>
+          <div class="card glass-card p-3 shadow-sm">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
+              <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
+            </div>
+            <div class="row align-items-center text-center my-2">
+              <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_a %></div>
+              <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
+              <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_b %></div>
+            </div>
+            <% const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id); %>
+            <% if (yaAposto) { %>
+              <div class="text-center py-2 rounded-3 bg-success bg-opacity-20 border border-success border-opacity-25">
+                <span class="text-success small fw-bold">APUESTA: <%= yaAposto.goles_a %> - <%= yaAposto.goles_b %></span>
+              </div>
+            <% } else { %>
+              <form action="/apostar" method="POST" class="mt-2">
+                <input type="hidden" name="id_partido" value="<%= partido.id %>">
+                <div class="row g-1">
+                  <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required></div>
+                  <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required></div>
+                  <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required></div>
+                  <div class="col-2"><button type="submit" class="btn btn-bet w-100 py-1"><i class="fas fa-check"></i></button></div>
+                </div>
+              </form>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small">🏆 Ranking</h5>
+      <div class="card glass-card overflow-hidden border-0 mb-4">
+        <table class="table table-dark table-sm mb-0">
+          <tbody>
+          <% ranking.slice(0, 10).forEach((u, i) => { %>
+            <tr>
+              <td class="ps-3 py-2 text-info fw-bold"><%= i + 1 %></td>
+              <td class="text-uppercase small"><%= u.nombre %></td>
+              <td class="text-end pe-3 fw-bold"><%= u.puntos %> <small class="opacity-50">pts</small></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <a href="/logout" class="btn btn-outline-danger btn-sm w-100">CERRAR SESIÓN</a>
+    </div>
+  </div>
+</div>
+
+<div id="chat-container" class="glass-card shadow-lg flex-column">
+  <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
+    <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
+    <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+  </div>
+  <div id="chat-messages" class="flex-grow-1 p-3"></div>
+  <div class="p-2 border-top border-white border-opacity-10 bg-dark">
+    <div class="input-group input-group-sm">
+      <input type="text" id="chat-input" class="form-control bg-transparent border-0 text-white" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviarMensaje()">
+      <button class="btn text-info border-0" onclick="enviarMensaje()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+
+<button onclick="toggleChat()" class="btn btn-success shadow-lg rounded-circle" style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1001;">
+  <i class="fas fa-comments fs-4"></i>
+</button>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const userNombre = "<%= user.nombre %>";
+  const userRol = "<%= user.rol %>";
+  let chatActual = null;
+
+  function renderSingleMessage(m) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    const isMe = m.usuario === userNombre;
+    const canMod = userRol === 'admin' || userRol === 'moderador';
+    const div = document.createElement('div');
+    div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
+    div.id = `msg-${m.id}`;
+    div.innerHTML = `
+      <span class="msg-user">${m.usuario}</span>
+      <div>${m.mensaje}</div>
+      ${canMod ? `<span class="btn-del badge bg-danger rounded-circle" onclick="borrarMensaje(${m.id})">x</span>` : ''}
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function setChat(id, titulo) {
+    chatActual = id;
+    document.getElementById('chat-title').innerText = titulo;
+    document.getElementById('chat-container').style.display = 'flex';
+    cargarMensajes();
+  }
+
+  async function cargarMensajes() {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '<div class="text-center opacity-50 small">Cargando...</div>';
+    try {
+      const res = await fetch(`/chat/${chatActual || ''}`);
+      const mensajes = await res.json();
+      container.innerHTML = '';
+      mensajes.forEach(renderSingleMessage);
+      container.scrollTop = container.scrollHeight;
+    } catch (e) { container.innerHTML = 'Error al cargar'; }
+  }
+
+  function toggleChat() {
+    const chat = document.getElementById('chat-container');
+    const isHidden = (chat.style.display === 'none' || !chat.style.display);
+    chat.style.display = isHidden ? 'flex' : 'none';
+    if(isHidden) cargarMensajes();
+  }
+
+  function enviarMensaje() {
+    const input = document.getElementById('chat-input');
+    const texto = input.value.trim();
+    if(!texto) return;
+    socket.emit('enviar_mensaje', {
+      usuario: userNombre, mensaje: texto, id_partido: chatActual, tipo: 'texto'
+    });
+    input.value = '';
+  }
+
+  async function borrarMensaje(id) {
+    if(confirm("¿Borrar mensaje?")) {
+      await fetch('/chat/borrar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id_mensaje: id})
+      });
+    }
+  }
+
+  socket.on('nuevo_mensaje', (m) => {
+    if ((m.id_partido ? String(m.id_partido) : null) === (chatActual ? String(chatActual) : null)) {
+      renderSingleMessage(m);
+    }
+  });
+
+  socket.on('mensaje_borrado', (id) => document.getElementById(`msg-${id}`)?.remove());
+  socket.on('update_porra', () => location.reload());
+</script>
+</body>
+</html>
