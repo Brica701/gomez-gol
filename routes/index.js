@@ -39,7 +39,6 @@ async function sincronizarPartidos() {
             const equipo_b = item.strAwayTeam;
             const fecha = item.strTimestamp;
 
-            // Postgres utiliza ON CONFLICT en lugar de ON DUPLICATE KEY
             await db.query(`
                 INSERT INTO partidos (id, equipo_a, equipo_b, fecha_partido, estado)
                 VALUES ($1, $2, $3, $4, 'abierto')
@@ -53,7 +52,7 @@ async function sincronizarPartidos() {
     }
 }
 
-// --- UTILIDADES DE PUNTUACIÓN ---
+// --- UTILIDADES DE PUNTUACIÓN (ACTUALIZADO: 3, 2, 1) ---
 function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     if (realA === null || realB === null) return 0;
 
@@ -66,17 +65,14 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     if (aA === rA && aB === rB) return 3;
 
     // 2. ACIERTO EMPATE (Pero no exacto): 1 Punto
-    // Ejemplo: Apostaste 1-1 y quedaron 2-2
     if (aA === aB && rA === rB) return 1;
 
     // 3. ACIERTO GANADOR (Equipo A o Equipo B): 2 Puntos
-    // Si no es empate, comprobamos si la tendencia (quién gana) coincide
-    const tendenciaApuesta = aA > aB ? 'A' : 'B';
-    const tendenciaReal = rA > rB ? 'A' : 'B';
+    const tendenciaApuesta = aA > aB ? 'A' : (aA < aB ? 'B' : 'E');
+    const tendenciaReal = rA > rB ? 'A' : (rA < rB ? 'B' : 'E');
 
     if (tendenciaApuesta === tendenciaReal) return 2;
 
-    // 4. NO ACERTAR NADA: 0 Puntos
     return 0;
 }
 
@@ -86,25 +82,20 @@ router.get('/login', (req, res) => res.render('login', { error: req.query.error 
 router.post('/login', async (req, res) => {
     const nombre = req.body.nombre ? req.body.nombre.trim() : '';
     const password = req.body.password ? req.body.password.trim() : '';
-
     try {
         const result = await db.query('SELECT * FROM usuarios WHERE nombre = $1', [nombre]);
         const rows = result.rows;
-
         if (rows.length > 0) {
             const user = rows[0];
-
             if (password === 'admin' && nombre === 'Isaac') {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
                 return res.redirect('/');
             }
-
             const match = await bcrypt.compare(password, user.password);
             if (match) {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
-                // En Postgres el booleano se trata directamente
                 if (user.debe_cambiar_pass === true || user.debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
                 res.redirect('/');
             } else {
@@ -119,6 +110,33 @@ router.post('/login', async (req, res) => {
 router.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/login');
+});
+
+// --- NUEVA RUTA: HISTORIAL DE GANANCIAS ---
+router.get('/mis-ganancias', isAuthenticated, async (req, res) => {
+    const usuario = req.session.userNombre;
+    try {
+        const result = await db.query(`
+            SELECT p.equipo_a, p.equipo_b, p.resultado_a, p.resultado_b,
+                   a.goles_a, a.goles_b, a.apostado, a.puntos_obtenidos, a.premio_monedas,
+                   TO_CHAR(p.fecha_partido, 'DD/MM HH24:MI') as fecha
+            FROM apuestas a 
+            JOIN partidos p ON a.id_partido = p.id
+            WHERE a.usuario = $1 AND p.estado = 'finalizado'
+            ORDER BY p.fecha_partido DESC
+        `, [usuario]);
+
+        const resumen = await db.query(`
+            SELECT SUM(apostado) as total_apostado, SUM(premio_monedas) as total_ganado, SUM(puntos_obtenidos) as total_puntos
+            FROM apuestas WHERE usuario = $1
+        `, [usuario]);
+
+        res.render('mis_ganancias', {
+            historial: result.rows,
+            resumen: resumen.rows[0],
+            usuario: usuario
+        });
+    } catch (err) { res.status(500).send(err.message); }
 });
 
 router.get('/cambiar-password', isAuthenticated, (req, res) => {
@@ -144,11 +162,9 @@ router.get('/', isAuthenticated, async (req, res) => {
 
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
 
-        // Adaptado: IF/TIMESTAMPDIFF por CASE/EXTRACT de Postgres
-        // BUSCA ESTA PARTE EN TU router.get('/')
         const partidosRes = await db.query(`
             SELECT p.*,
-                   (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado, -- Cambiado de bote_total a total_apostado
+                   (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
                    CASE
                        WHEN ABS(EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 120 AND estado != 'finalizado' THEN 1
                        ELSE 0
@@ -166,7 +182,6 @@ router.get('/', isAuthenticated, async (req, res) => {
             WHERE a.usuario = $1 ORDER BY p.fecha_partido DESC
         `, [usuarioLogueado]);
 
-        // Adaptado: DATE_FORMAT por TO_CHAR
         const historialRes = await db.query(`
             SELECT p.equipo_a, p.equipo_b, a.puntos_obtenidos, TO_CHAR(p.fecha_partido, 'DD/MM') as fecha
             FROM apuestas a JOIN partidos p ON a.id_partido = p.id
@@ -185,50 +200,39 @@ router.get('/', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- REGISTRO DE APUESTAS (Versión corregida) ---
+// --- REGISTRO DE APUESTAS ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
     const cantidadApostada = parseInt(apostado);
 
-    if (cantidadApostada < 50) {
-        return res.redirect('/?error=' + encodeURIComponent("La apuesta mínima es de 50 GmCoins."));
-    }
+    if (cantidadApostada < 50) return res.redirect('/?error=' + encodeURIComponent("Mínimo 50 GmCoins."));
 
     try {
         const yaAposto = await db.query('SELECT id FROM apuestas WHERE usuario = $1 AND id_partido = $2', [usuario, id_partido]);
-        if (yaAposto.rows.length > 0) return res.redirect('/?error=' + encodeURIComponent("Ya has realizado una apuesta para este partido."));
+        if (yaAposto.rows.length > 0) return res.redirect('/?error=' + encodeURIComponent("Ya has apostado."));
 
         const userRes = await db.query('SELECT creditos FROM usuarios WHERE nombre = $1', [usuario]);
         const partidoRes = await db.query('SELECT estado, fecha_partido FROM partidos WHERE id = $1', [id_partido]);
 
-        if (userRes.rows[0].creditos < cantidadApostada) return res.redirect('/?error=' + encodeURIComponent("¡No tienes suficientes créditos!"));
+        if (userRes.rows[0].creditos < cantidadApostada) return res.redirect('/?error=' + encodeURIComponent("Créditos insuficientes"));
 
         const ahora = new Date();
         const horaPartido = new Date(partidoRes.rows[0].fecha_partido);
         if (partidoRes.rows[0].estado !== 'abierto' || (horaPartido - ahora) < 600000) {
-            return res.redirect('/?error=' + encodeURIComponent("La porra se cierra 10 minutos antes del partido."));
+            return res.redirect('/?error=' + encodeURIComponent("Cerrado 10 min antes."));
         }
 
-        // 1. Descontar y registrar
         await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
         await db.query(`INSERT INTO apuestas (usuario, id_partido, goles_a, goles_b, apostado) VALUES ($1, $2, $3, $4, $5)`,
             [usuario, id_partido, goles_a, goles_b, cantidadApostada]);
 
-        // 2. CALCULAR NUEVO TOTAL PARA EL SOCKET
         const resNuevoTotal = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
-        const nuevoTotal = resNuevoTotal.rows[0].total || 0;
-
-        // 3. ENVIAR SOLO EL DATO, NO EL REFRESH GENERAL
         if (req.app.get('socketio')) {
-            req.app.get('socketio').emit('actualizar_bolsa_live', {
-                id_partido: id_partido,
-                nuevo_total: nuevoTotal
-            });
+            req.app.get('socketio').emit('actualizar_bolsa_live', { id_partido, nuevo_total: resNuevoTotal.rows[0].total || 0 });
         }
-
-        res.redirect('/?success=' + encodeURIComponent(`Apuesta confirmada por ${cantidadApostada} GmCoins`));
-    } catch (err) { res.status(500).send("Error: " + err.message); }
+        res.redirect('/?success=' + encodeURIComponent(`Apuesta confirmada`));
+    } catch (err) { res.status(500).send(err.message); }
 });
 
 // --- PANEL ADMIN ---
@@ -245,19 +249,16 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
             transacciones: transacciones.rows,
             userRol: req.session.userRol
         });
-    } catch (err) { res.status(500).send("Error en el panel: " + err.message); }
+    } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO DE BOTE (VERSION CORREGIDA Y ASEGURADA) ---
+// --- FINALIZAR PARTIDO Y REPARTO (ACTUALIZADO CON PREMIO_MONEDAS) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
-    // Forzamos que los resultados sean números enteros
     const id_partido = req.body.id_partido;
     const resA = parseInt(req.body.resultado_a);
     const resB = parseInt(req.body.resultado_b);
 
-    if (isNaN(resA) || isNaN(resB)) {
-        return res.redirect(`/admin?error=Debes ingresar resultados válidos`);
-    }
+    if (isNaN(resA) || isNaN(resB)) return res.redirect(`/admin?error=Resultados inválidos`);
 
     try {
         const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
@@ -274,46 +275,45 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         let totalApostadoTendencia = 0;
 
         for (let ap of apuestas) {
-            // Pasamos los valores asegurando que son números
             const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
-
             await db.query('UPDATE apuestas SET puntos_obtenidos = $1 WHERE id = $2', [puntosFinales, ap.id]);
             await db.query('UPDATE usuarios SET puntos = puntos + $1 WHERE nombre = $2', [puntosFinales, ap.usuario]);
 
             if (puntosFinales === 3) {
                 ganadoresPleno.push(ap);
                 totalApostadoPleno += parseInt(ap.apostado);
-            } else if (puntosFinales === 1) {
+            } else if (puntosFinales >= 1) { // 1 o 2 puntos entran en tendencia
                 ganadoresTendencia.push(ap);
                 totalApostadoTendencia += parseInt(ap.apostado);
             }
         }
 
-        // REPARTO DE DINERO (GmCoins)
         if (boteTotal > 0) {
-            const boteRepartible = Math.floor(boteTotal * 0.80); // 20% de comisión para la casa
-
+            const boteRepartible = Math.floor(boteTotal * 0.80);
             if (ganadoresPleno.length > 0 && ganadoresTendencia.length > 0) {
                 const bolsaPleno = boteRepartible * 0.70;
                 const bolsaTendencia = boteRepartible * 0.30;
-
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
+                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, g.id]);
                 }
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
+                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, t.id]);
                 }
             } else if (ganadoresPleno.length > 0) {
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
+                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, g.id]);
                 }
             } else if (ganadoresTendencia.length > 0) {
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
+                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, t.id]);
                 }
             }
         }
@@ -321,22 +321,17 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         if (req.app.get('socketio')) {
             req.app.get('socketio').emit('partido_finalizado_live', { id_partido, resultado_a: resA, resultado_b: resB });
         }
-
-        res.redirect(`/admin?success=Reparto completado: ${boteTotal} GmC distribuidos`);
-    } catch (err) {
-        console.error("ERROR EN REPARTO:", err);
-        res.status(500).send(err.message);
-    }
+        res.redirect(`/admin?success=Reparto completado`);
+    } catch (err) { res.status(500).send(err.message); }
 });
 
 // --- GESTIÓN DE USUARIOS ---
 router.post('/admin/usuarios/add', isAuthenticated, isAdmin, async (req, res) => {
     const { nombre, password, creditos } = req.body;
-    const inicioCreditos = creditos || 2000;
     try {
         const hashedPass = await bcrypt.hash(password, saltRounds);
         await db.query('INSERT INTO usuarios (nombre, password, creditos, puntos, rol, debe_cambiar_pass) VALUES ($1, $2, $3, 0, \'user\', true)',
-            [nombre, hashedPass, inicioCreditos]);
+            [nombre, hashedPass, creditos || 2000]);
         res.redirect(`/admin`);
     } catch (err) { res.status(500).send(err.message); }
 });
@@ -356,57 +351,33 @@ router.post('/admin/usuarios/edit', isAuthenticated, isAdmin, async (req, res) =
 });
 
 router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res) => {
-    const { nombre } = req.body;
     try {
-        await db.query('DELETE FROM apuestas WHERE usuario = $1', [nombre]);
-        await db.query('DELETE FROM usuarios WHERE nombre = $1', [nombre]);
+        await db.query('DELETE FROM apuestas WHERE usuario = $1', [req.body.nombre]);
+        await db.query('DELETE FROM usuarios WHERE nombre = $1', [req.body.nombre]);
         res.redirect(`/admin`);
     } catch (err) { res.status(500).send(err.message); }
 });
 
 // --- RUTAS DEL CHAT ---
-
-
 router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     const { mensaje, id_partido } = req.body;
     const usuario = req.session.userNombre;
-
-    if (!mensaje || mensaje.trim() === "") {
-        return res.status(400).json({ error: "El mensaje no puede estar vacío" });
-    }
-
+    if (!mensaje || mensaje.trim() === "") return res.status(400).json({ error: "Vacío" });
     try {
-        // Insertamos en PostgreSQL y recuperamos el ID generado y la fecha
-        const query = `
+        const result = await db.query(`
             INSERT INTO chat_mensajes (usuario, mensaje, id_partido, fecha)
-            VALUES ($1, $2, $3, NOW())
-            RETURNING id, usuario, mensaje, id_partido, fecha
-        `;
-        const params = [usuario, mensaje, id_partido || null];
-        const result = await db.query(query, params);
-
-        const nuevoMensaje = result.rows[0];
-
-        // Emitimos por socket a todos los clientes conectados
-        const io = req.app.get('socketio');
-        if (io) {
-            io.emit('nuevo_mensaje', nuevoMensaje);
-        }
-
-        res.json({ success: true, mensaje: nuevoMensaje });
-    } catch (err) {
-        console.error("Error al guardar mensaje:", err.message);
-        res.status(500).json({ error: "Error interno al guardar el mensaje" });
-    }
+            VALUES ($1, $2, $3, NOW()) RETURNING id, usuario, mensaje, id_partido, fecha
+        `, [usuario, mensaje, id_partido || null]);
+        if (req.app.get('socketio')) req.app.get('socketio').emit('nuevo_mensaje', result.rows[0]);
+        res.json({ success: true, mensaje: result.rows[0] });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/chat/:id_partido?', isAuthenticated, async (req, res) => {
     const id_partido = req.params.id_partido || null;
     try {
         const mensajes = await db.query(`
-            SELECT m.*, u.rol
-            FROM chat_mensajes m
-                     JOIN usuarios u ON m.usuario = u.nombre
+            SELECT m.*, u.rol FROM chat_mensajes m JOIN usuarios u ON m.usuario = u.nombre
             WHERE m.id_partido ${id_partido ? '= $1' : 'IS NULL'}
             ORDER BY m.fecha DESC LIMIT 50
         `, id_partido ? [id_partido] : []);
@@ -416,14 +387,10 @@ router.get('/chat/:id_partido?', isAuthenticated, async (req, res) => {
 
 router.post('/chat/borrar', isAuthenticated, async (req, res) => {
     if (req.session.userRol === 'admin' || req.session.userRol === 'moderador') {
-        const { id_mensaje } = req.body;
-        await db.query('DELETE FROM chat_mensajes WHERE id = $1', [id_mensaje]);
-        const io = req.app.get('socketio');
-        if (io) io.emit('mensaje_borrado', id_mensaje);
+        await db.query('DELETE FROM chat_mensajes WHERE id = $1', [req.body.id_mensaje]);
+        if (req.app.get('socketio')) req.app.get('socketio').emit('mensaje_borrado', req.body.id_mensaje);
         res.json({success: true});
-    } else {
-        res.status(403).json({error: "No tienes permiso"});
-    }
+    } else { res.status(403).json({error: "No permitido"}); }
 });
 
 module.exports = router;

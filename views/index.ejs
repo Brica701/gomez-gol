@@ -98,6 +98,15 @@
 </nav>
 
 <div class="container mt-3 mb-5">
+  <!-- BOTÓN HISTORIAL Y GANANCIAS -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <a href="/mis-ganancias" class="btn btn-success w-100 fw-bold shadow-sm py-2">
+        <i class="fas fa-hand-holding-usd me-2"></i> VER MIS GANANCIAS Y PUNTOS TOTALES
+      </a>
+    </div>
+  </div>
+
   <div class="row g-4">
     <div class="col-lg-9">
 
@@ -138,7 +147,7 @@
 
       <!-- SECCIÓN: PARTIDOS PENDIENTES -->
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
-      <div class="partidos-grid">
+      <div class="partidos-grid mb-5">
         <%
         let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
         pendientes.forEach(partido => {
@@ -172,6 +181,7 @@
           </div>
         <% }) %>
       </div>
+
     </div>
 
     <div class="col-lg-3">
@@ -290,13 +300,11 @@
 
   socket.on('mensaje_borrado', (id) => document.getElementById(`msg-${id}`)?.remove());
 
-  // --- LÓGICA DE ACTUALIZACIÓN LIVE (SIN RECARGA) ---
-
   socket.on('actualizar_bolsa_live', (data) => {
     const bolsas = document.querySelectorAll(`.bolsa-partido-${data.id_partido}`);
     bolsas.forEach(el => {
       el.innerText = `${data.nuevo_total} GmC`;
-      el.style.color = "#00ff00"; // Destello verde
+      el.style.color = "#00ff00";
       setTimeout(() => el.style.color = "", 1000);
     });
   });
@@ -309,8 +317,6 @@
       setTimeout(() => t.remove(), 500);
     });
   });
-
-
 </script>
 </body>
 </html>
