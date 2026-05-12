@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Ganancias | Gomez-Gol</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary-color: #28a745; --glass-bg: rgba(255, 255, 255, 0.08); }
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+            url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-attachment: fixed;
+            color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh;
+        }
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; }
+        .table { color: white !important; }
+        .text-success-custom { color: #2ecc71 !important; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark border-bottom border-success mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/"><i class="fas fa-arrow-left me-2"></i> VOLVER</a>
+        <span class="navbar-text text-white">Historial de <b><%= usuario %></b></span>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Resumen de Ganancias -->
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-4">
+            <div class="glass-card p-3">
+                <div class="small opacity-75">Invertido</div>
+                <div class="h4 m-0 text-info"><%= resumen.total_apostado || 0 %></div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="glass-card p-3">
+                <div class="small opacity-75">Ganado Total</div>
+                <div class="h4 m-0 text-success-custom"><%= resumen.total_ganado || 0 %></div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="glass-card p-3">
+                <div class="small opacity-75">Puntos</div>
+                <div class="h4 m-0 text-warning"><%= resumen.total_puntos || 0 %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Historial -->
+    <div class="glass-card p-3 mb-5">
+        <h5 class="mb-3"><i class="fas fa-history me-2 text-success"></i> Partidos Finalizados</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr class="text-secondary small text-uppercase">
+                    <th>Partido / Fecha</th>
+                    <th>Tu Apuesta</th>
+                    <th>Resultado</th>
+                    <th>Pts</th>
+                    <th class="text-end">Premio</th>
+                </tr>
+                </thead>
+                <tbody>
+                <% if(historial.length === 0) { %>
+                    <tr><td colspan="5" class="text-center opacity-50 py-4">No hay partidos finalizados aún.</td></tr>
+                <% } %>
+                <% historial.forEach(ap => { %>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td>
+                            <div class="fw-bold small"><%= ap.equipo_a %> vs <%= ap.equipo_b %></div>
+                            <div class="opacity-50" style="font-size: 0.7rem;"><%= ap.fecha %></div>
+                        </td>
+                        <td><span class="badge bg-dark border border-secondary"><%= ap.goles_a %> - <%= ap.goles_b %></span></td>
+                        <td><span class="badge bg-success text-dark"><%= ap.resultado_a %> - <%= ap.resultado_b %></span></td>
+                        <td class="fw-bold text-warning">+<%= ap.puntos_obtenidos %></td>
+                        <td class="text-end fw-bold <%= ap.premio_monedas > 0 ? 'text-success-custom' : 'text-danger' %>">
+                            <%= ap.premio_monedas > 0 ? '+' + ap.premio_monedas : '0' %> GmC
+                        </td>
+                    </tr>
+                <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
