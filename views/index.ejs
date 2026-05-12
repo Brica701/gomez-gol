@@ -111,6 +111,13 @@
               <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
               <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_b %></div>
             </div>
+
+            <div class="text-center mb-3">
+              <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
+                <i class="fas fa-vault text-info me-1"></i> BOLSA TOTAL: <span class="text-info fw-bold"><%= partido.total_apostado || 0 %> GmC</span>
+              </span>
+            </div>
+
             <% const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id); %>
             <% if (yaAposto) { %>
               <div class="text-center py-2 rounded-3 bg-success bg-opacity-20 border border-success border-opacity-25">
