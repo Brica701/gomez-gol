@@ -387,7 +387,7 @@ router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     try {
         // --- BLOQUE DE COMPROBACIÓN DE BANEO ---
         const checkBan = await db.query(
-            'SELECT ban_hasta FROM usuarios WHERE nombre = $1 AND ban_hasta > NOW()',
+            "SELECT ban_hasta FROM usuarios WHERE nombre = $1 AND ban_hasta > AT TIME ZONE 'Europe/Madrid'",
             [usuario]
         );
 
