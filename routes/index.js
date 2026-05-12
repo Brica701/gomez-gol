@@ -56,15 +56,27 @@ async function sincronizarPartidos() {
 // --- UTILIDADES DE PUNTUACIÓN ---
 function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     if (realA === null || realB === null) return 0;
+
     const aA = parseInt(apuestaA);
     const aB = parseInt(apuestaB);
     const rA = parseInt(realA);
     const rB = parseInt(realB);
 
+    // 1. ACIERTO EXACTO (Marcador): 3 Puntos
     if (aA === rA && aB === rB) return 3;
 
-    if ((aA > aB && rA > rB) || (aA < aB && rA < rB) || (aA === aB && rA === rB)) return 1;
+    // 2. ACIERTO EMPATE (Pero no exacto): 1 Punto
+    // Ejemplo: Apostaste 1-1 y quedaron 2-2
+    if (aA === aB && rA === rB) return 1;
 
+    // 3. ACIERTO GANADOR (Equipo A o Equipo B): 2 Puntos
+    // Si no es empate, comprobamos si la tendencia (quién gana) coincide
+    const tendenciaApuesta = aA > aB ? 'A' : 'B';
+    const tendenciaReal = rA > rB ? 'A' : 'B';
+
+    if (tendenciaApuesta === tendenciaReal) return 2;
+
+    // 4. NO ACERTAR NADA: 0 Puntos
     return 0;
 }
 
