@@ -12,6 +12,7 @@
       --primary-color: #28a745;
       --glass-bg: rgba(255, 255, 255, 0.08);
       --glass-border: rgba(255, 255, 255, 0.15);
+      --streak-gold: #ffc107;
     }
 
     body {
@@ -36,6 +37,14 @@
       border: 1px solid var(--glass-border);
       border-radius: 20px;
       transition: all 0.4s ease;
+    }
+
+    .streak-badge {
+      background: rgba(255, 193, 7, 0.15);
+      border: 1px solid var(--streak-gold);
+      color: var(--streak-gold) !important;
+      font-size: 0.75rem;
+      font-weight: 800;
     }
 
     .partidos-grid {
@@ -84,9 +93,10 @@
   <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
     <div class="d-flex align-items-center gap-2">
-      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
-        <i class="fas fa-globe me-1"></i> General
-      </button>
+      <!-- Muestra de racha en la cabecera -->
+      <div class="streak-badge px-2 py-1 rounded-pill d-none d-md-block">
+        <i class="fas fa-fire me-1"></i> x<%= user.racha_ganador || 0 %>
+      </div>
       <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
         <i class="fas fa-coins text-warning me-1"></i> <%= user.creditos %>
       </div>
@@ -98,7 +108,6 @@
 </nav>
 
 <div class="container mt-3 mb-5">
-  <!-- BOTÓN HISTORIAL Y GANANCIAS -->
   <div class="row mb-4">
     <div class="col-12">
       <a href="/mis-ganancias" class="btn btn-success w-100 fw-bold shadow-sm py-2">
@@ -109,7 +118,6 @@
 
   <div class="row g-4">
     <div class="col-lg-9">
-
       <!-- SECCIÓN: MIS APUESTAS -->
       <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
       <div class="partidos-grid mb-5">
@@ -181,10 +189,31 @@
           </div>
         <% }) %>
       </div>
-
     </div>
 
     <div class="col-lg-3">
+      <!-- NUEVO PANEL DE RACHAS -->
+      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-fire-alt text-warning me-2"></i> Mis Rachas Actuales</h5>
+      <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="small fw-bold">Aciertos Seguidos:</span>
+          <span class="badge streak-gold text-dark bg-warning px-2"><%= user.racha_ganador || 0 %></span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="small fw-bold">Plenos Seguidos:</span>
+          <span class="badge bg-info text-dark px-2"><%= user.racha_exacta || 0 %></span>
+        </div>
+        <div class="bg-dark bg-opacity-50 rounded p-2 text-center">
+          <small class="opacity-75" style="font-size: 0.65rem;">
+            <% if ((user.racha_ganador || 0) >= 1) { %>
+              🔥 Próximo Bonus: <span class="text-warning">+<%= ((user.racha_ganador || 0) + 1) * 50 %> GmC</span>
+            <% } else { %>
+              ¡Gana el próximo para activar racha!
+            <% } %>
+          </small>
+        </div>
+      </div>
+
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small">🏆 Ranking</h5>
       <div class="card glass-card overflow-hidden border-0 mb-4">
         <table class="table table-dark table-sm mb-0">
@@ -204,6 +233,7 @@
   </div>
 </div>
 
+<!-- CHAT Y SCRIPTS SE MANTIENEN IGUAL -->
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>

@@ -61,13 +61,9 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const rA = parseInt(realA);
     const rB = parseInt(realB);
 
-    // 1. ACIERTO EXACTO (Marcador): 3 Puntos
     if (aA === rA && aB === rB) return 3;
-
-    // 2. ACIERTO EMPATE (Pero no exacto): 1 Punto
     if (aA === aB && rA === rB) return 1;
 
-    // 3. ACIERTO GANADOR (Equipo A o Equipo B): 2 Puntos
     const tendenciaApuesta = aA > aB ? 'A' : (aA < aB ? 'B' : 'E');
     const tendenciaReal = rA > rB ? 'A' : (rA < rB ? 'B' : 'E');
 
@@ -120,8 +116,8 @@ router.get('/mis-ganancias', isAuthenticated, async (req, res) => {
             SELECT p.equipo_a, p.equipo_b, p.resultado_a, p.resultado_b,
                    a.goles_a, a.goles_b, a.apostado, a.puntos_obtenidos, a.premio_monedas,
                    TO_CHAR(p.fecha_partido, 'DD/MM HH24:MI') as fecha
-            FROM apuestas a 
-            JOIN partidos p ON a.id_partido = p.id
+            FROM apuestas a
+                     JOIN partidos p ON a.id_partido = p.id
             WHERE a.usuario = $1 AND p.estado = 'finalizado'
             ORDER BY p.fecha_partido DESC
         `, [usuario]);
@@ -252,7 +248,7 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO (ACTUALIZADO CON PREMIO_MONEDAS) ---
+// --- FINALIZAR PARTIDO Y REPARTO CON LOGICA DE RACHAS (3, 2, 1) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
     const id_partido = req.body.id_partido;
     const resA = parseInt(req.body.resultado_a);
@@ -276,18 +272,42 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
 
         for (let ap of apuestas) {
             const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
-            await db.query('UPDATE apuestas SET puntos_obtenidos = $1 WHERE id = $2', [puntosFinales, ap.id]);
-            await db.query('UPDATE usuarios SET puntos = puntos + $1 WHERE nombre = $2', [puntosFinales, ap.usuario]);
+
+            // --- LOGICA DE RACHAS Y BONUS GARANTIZADOS ---
+            let rachaData = await db.query('SELECT racha_exacta, racha_ganador FROM rachas WHERE usuario_nombre = $1', [ap.usuario]);
+            if (rachaData.rows.length === 0) {
+                await db.query('INSERT INTO rachas (usuario_nombre) VALUES ($1)', [ap.usuario]);
+                rachaData = { rows: [{ racha_exacta: 0, racha_ganador: 0 }] };
+            }
+            let racha = rachaData.rows[0];
+            let bonusGarantizado = 0;
+
+            if (puntosFinales === 3) {
+                let nuevoNivel = racha.racha_exacta + 1;
+                if (nuevoNivel >= 2) bonusGarantizado = nuevoNivel * 100;
+                await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = racha_ganador + 1 WHERE usuario_nombre = $2', [nuevoNivel, ap.usuario]);
+            } else if (puntosFinales >= 1) {
+                let nuevoNivelG = racha.racha_ganador + 1;
+                if (nuevoNivelG >= 2) bonusGarantizado = nuevoNivelG * 50;
+                await db.query('UPDATE rachas SET racha_ganador = $1, racha_exacta = 0 WHERE usuario_nombre = $2', [nuevoNivelG, ap.usuario]);
+            } else {
+                await db.query('UPDATE rachas SET racha_exacta = 0, racha_ganador = 0 WHERE usuario_nombre = $1', [ap.usuario]);
+            }
+
+            // Aplicar puntos y bonus garantizado (si existe)
+            await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = premio_monedas + $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
+            await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntosFinales, bonusGarantizado, ap.usuario]);
 
             if (puntosFinales === 3) {
                 ganadoresPleno.push(ap);
                 totalApostadoPleno += parseInt(ap.apostado);
-            } else if (puntosFinales >= 1) { // 1 o 2 puntos entran en tendencia
+            } else if (puntosFinales >= 1) {
                 ganadoresTendencia.push(ap);
                 totalApostadoTendencia += parseInt(ap.apostado);
             }
         }
 
+        // --- REPARTO DEL BOTE (80%) ---
         if (boteTotal > 0) {
             const boteRepartible = Math.floor(boteTotal * 0.80);
             if (ganadoresPleno.length > 0 && ganadoresTendencia.length > 0) {
@@ -296,24 +316,24 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, g.id]);
+                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
                 }
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, t.id]);
+                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
                 }
             } else if (ganadoresPleno.length > 0) {
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, g.id]);
+                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
                 }
             } else if (ganadoresTendencia.length > 0) {
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = $1 WHERE id = $2', [suParte, t.id]);
+                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
                 }
             }
         }
