@@ -72,9 +72,16 @@
             border-radius: 20px;
             text-transform: uppercase;
         }
+
+        /* Notificaciones Live */
+        #live-toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+        }
     </style>
 </head>
 <body class="p-3 p-md-4">
+
+<div id="live-toast-container"></div>
 
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
@@ -94,27 +101,27 @@
         <div class="col-6 col-md-3">
             <div class="stat-card">
                 <small class="text-muted-white d-block mb-1 text-uppercase">Usuarios</small>
-                <h3 class="fw-bold mb-0"><%= usuarios.length %></h3>
+                <h3 class="fw-bold mb-0" id="stat-usuarios"><%= usuarios.length %></h3>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: var(--warning);">
                 <small class="text-muted-white d-block mb-1 text-uppercase">Partidos Activos</small>
-                <h3 class="fw-bold mb-0 text-warning-bold"><%= partidos.filter(p => p.estado !== 'finalizado').length %></h3>
+                <h3 class="fw-bold mb-0 text-warning-bold" id="stat-partidos"><%= partidos.filter(p => p.estado !== 'finalizado').length %></h3>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: var(--success);">
                 <small class="text-muted-white d-block mb-1 text-uppercase">Total en Juego</small>
                 <h3 class="fw-bold mb-0 text-success-bold">
-                    <%= transacciones.filter(t => t.puntos_obtenidos === 0).reduce((acc, t) => acc + t.apostado, 0) %> <small style="font-size: 0.5em;">GmC</small>
+                    <span id="stat-dinero"><%= transacciones.filter(t => t.puntos_obtenidos === 0).reduce((acc, t) => acc + t.apostado, 0) %></span> <small style="font-size: 0.5em;">GmC</small>
                 </h3>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: #a855f7;">
                 <small class="text-muted-white d-block mb-1 text-uppercase">Apuestas Totales</small>
-                <h3 class="fw-bold mb-0" style="color: #d8b4fe !important;"><%= transacciones.length %></h3>
+                <h3 class="fw-bold mb-0" style="color: #d8b4fe !important;" id="stat-apuestas"><%= transacciones.length %></h3>
             </div>
         </div>
     </div>
@@ -129,7 +136,6 @@
         <div class="tab-pane fade show active" id="tab-usuarios">
             <div class="card card-admin p-4 mb-4 border-0">
                 <h5 class="mb-4 fw-bold text-info-bold"><i class="fas fa-user-plus me-2"></i>Nuevo Jugador</h5>
-                <!-- Formulario editado con ID y autocomplete off -->
                 <form id="formNuevoUsuario" action="/admin/usuarios/add" method="POST" class="row g-3" autocomplete="off">
                     <div class="col-md-4"><input type="text" name="nombre" class="form-control input-dark py-2" placeholder="Nombre" required></div>
                     <div class="col-md-3"><input type="password" name="password" class="form-control input-dark py-2" placeholder="Password Temporal" required></div>
@@ -187,7 +193,7 @@
     <div class="tab-pane fade" id="tab-partidos">
         <div class="card card-admin p-0 border-0">
             <% partidos.forEach(p => { %>
-                <div class="p-4 border-bottom border-secondary <%= p.estado === 'finalizado' ? 'bg-dark bg-opacity-25' : '' %>">
+                <div class="p-4 border-bottom border-secondary <%= p.estado === 'finalizado' ? 'bg-dark bg-opacity-25' : '' %>" id="partido-row-<%= p.id %>">
                     <form action="/admin/finalizar-partido" method="POST" class="row align-items-center g-3">
                         <input type="hidden" name="id_partido" value="<%= p.id %>">
                         <div class="col-md-4">
@@ -248,7 +254,45 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const socket = io();
-    socket.on('update_porra', () => location.reload());
+
+    // Función para mostrar notificaciones sin recargar
+    function showAdminNotify(msg, type = 'info') {
+        const container = document.getElementById('live-toast-container');
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} shadow-lg border-0 mb-2 animate__animated animate__fadeInRight`;
+        toast.style.minWidth = "250px";
+        toast.innerHTML = `<i class="fas fa-bell me-2"></i> ${msg}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.replace('animate__fadeInRight', 'animate__fadeOutRight');
+            setTimeout(() => toast.remove(), 500);
+        }, 4000);
+    }
+
+    // --- ESCUCHADORES SOCKETS SIN RECARGA ---
+
+    socket.on('actualizar_bolsa_live', (data) => {
+        showAdminNotify(`Nueva apuesta en partido #${data.id_partido}: <b>+${data.monto_apuesta} GmC</b>`, 'warning');
+        // Actualizamos el contador de "Total en Juego" arriba
+        const elDinero = document.getElementById('stat-dinero');
+        if(elDinero) {
+            let actual = parseInt(elDinero.innerText);
+            elDinero.innerText = actual + data.monto_apuesta;
+        }
+    });
+
+    socket.on('nuevo_usuario_registrado', () => {
+        showAdminNotify('Un nuevo usuario se ha unido.', 'info');
+        const elUserCount = document.getElementById('stat-usuarios');
+        if(elUserCount) elUserCount.innerText = parseInt(elUserCount.innerText) + 1;
+    });
+
+    // Mantenemos esto por seguridad, pero ya no forzamos el reload
+    socket.on('update_porra', () => {
+        console.log("Evento general de actualización recibido");
+        // Solo si quieres que el admin sepa que algo grande cambió:
+        showAdminNotify('El estado del servidor ha cambiado.', 'primary');
+    });
 
     // Script de limpieza para el formulario de nuevo usuario
     const formNuevo = document.getElementById('formNuevoUsuario');
@@ -256,6 +300,7 @@
         formNuevo.addEventListener('submit', function() {
             setTimeout(() => {
                 this.reset();
+                showAdminNotify('Petición de registro enviada.', 'success');
             }, 100);
         });
     }

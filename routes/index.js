@@ -173,7 +173,7 @@ router.get('/', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- REGISTRO DE APUESTAS ---
+// --- REGISTRO DE APUESTAS (Versión corregida) ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
@@ -198,11 +198,23 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             return res.redirect('/?error=' + encodeURIComponent("La porra se cierra 10 minutos antes del partido."));
         }
 
+        // 1. Descontar y registrar
         await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
         await db.query(`INSERT INTO apuestas (usuario, id_partido, goles_a, goles_b, apostado) VALUES ($1, $2, $3, $4, $5)`,
             [usuario, id_partido, goles_a, goles_b, cantidadApostada]);
 
-        if (req.app.get('socketio')) req.app.get('socketio').emit('update_porra');
+        // 2. CALCULAR NUEVO TOTAL PARA EL SOCKET
+        const resNuevoTotal = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
+        const nuevoTotal = resNuevoTotal.rows[0].total || 0;
+
+        // 3. ENVIAR SOLO EL DATO, NO EL REFRESH GENERAL
+        if (req.app.get('socketio')) {
+            req.app.get('socketio').emit('actualizar_bolsa_live', {
+                id_partido: id_partido,
+                nuevo_total: nuevoTotal
+            });
+        }
+
         res.redirect('/?success=' + encodeURIComponent(`Apuesta confirmada por ${cantidadApostada} GmCoins`));
     } catch (err) { res.status(500).send("Error: " + err.message); }
 });
@@ -224,7 +236,7 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send("Error en el panel: " + err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO DE BOTE ---
+// --- FINALIZAR PARTIDO Y REPARTO DE BOTE (CORREGIDO) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
     const { id_partido, resultado_a, resultado_b } = req.body;
     try {
@@ -280,7 +292,18 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
                 }
             }
         }
-        if (req.app.get('socketio')) req.app.get('socketio').emit('update_porra');
+
+        // --- CAMBIO CLAVE AQUÍ ---
+        // Emitimos que el partido ha finalizado específicamente para que el cliente oculte el partido
+        // o lo marque como finalizado sin recargar la página completa.
+        if (req.app.get('socketio')) {
+            req.app.get('socketio').emit('partido_finalizado_live', {
+                id_partido,
+                resultado_a,
+                resultado_b
+            });
+        }
+
         res.redirect(`/admin?success=Reparto completado`);
     } catch (err) { res.status(500).send(err.message); }
 });
@@ -321,6 +344,41 @@ router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res)
 });
 
 // --- RUTAS DEL CHAT ---
+
+
+router.post('/chat/enviar', isAuthenticated, async (req, res) => {
+    const { mensaje, id_partido } = req.body;
+    const usuario = req.session.userNombre;
+
+    if (!mensaje || mensaje.trim() === "") {
+        return res.status(400).json({ error: "El mensaje no puede estar vacío" });
+    }
+
+    try {
+        // Insertamos en PostgreSQL y recuperamos el ID generado y la fecha
+        const query = `
+            INSERT INTO chat_mensajes (usuario, mensaje, id_partido, fecha)
+            VALUES ($1, $2, $3, NOW())
+            RETURNING id, usuario, mensaje, id_partido, fecha
+        `;
+        const params = [usuario, mensaje, id_partido || null];
+        const result = await db.query(query, params);
+
+        const nuevoMensaje = result.rows[0];
+
+        // Emitimos por socket a todos los clientes conectados
+        const io = req.app.get('socketio');
+        if (io) {
+            io.emit('nuevo_mensaje', nuevoMensaje);
+        }
+
+        res.json({ success: true, mensaje: nuevoMensaje });
+    } catch (err) {
+        console.error("Error al guardar mensaje:", err.message);
+        res.status(500).json({ error: "Error interno al guardar el mensaje" });
+    }
+});
+
 router.get('/chat/:id_partido?', isAuthenticated, async (req, res) => {
     const id_partido = req.params.id_partido || null;
     try {

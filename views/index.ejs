@@ -35,6 +35,7 @@
       backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
       border-radius: 20px;
+      transition: all 0.4s ease;
     }
 
     .partidos-grid {
@@ -49,7 +50,6 @@
       font-weight: 900; margin: 0 auto; font-size: 0.65rem;
     }
 
-    /* Inputs con letra negra para legibilidad */
     .form-control-mobile {
       background: rgba(255, 255, 255, 0.9) !important;
       border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -60,7 +60,6 @@
 
     .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
 
-    /* --- ESTILOS CHAT --- */
     #chat-container {
       position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
       z-index: 1050; display: none; flex-direction: column;
@@ -114,7 +113,7 @@
         apostados.forEach(partido => {
           const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
         %>
-        <div class="card glass-card p-3 shadow-sm border-success">
+        <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %>">
           <div class="d-flex justify-content-between mb-2">
             <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
             <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
@@ -126,7 +125,7 @@
           </div>
           <div class="text-center mb-2">
               <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
-                <i class="fas fa-vault text-info me-1"></i> BOLSA: <span class="text-info fw-bold"><%= partido.total_apostado || 0 %> GmC</span>
+                <i class="fas fa-vault text-info me-1"></i> BOLSA: <span class="text-info fw-bold bolsa-partido-<%= partido.id %>"><%= partido.total_apostado || 0 %> GmC</span>
               </span>
           </div>
           <div class="text-center py-2 rounded-3 bg-white shadow-sm border border-success">
@@ -144,7 +143,7 @@
         let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
         pendientes.forEach(partido => {
         %>
-          <div class="card glass-card p-3 shadow-sm">
+          <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %>">
             <div class="d-flex justify-content-between mb-2">
               <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
               <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
@@ -157,7 +156,7 @@
 
             <div class="text-center mb-3">
               <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
-                <i class="fas fa-vault text-info me-1"></i> BOLSA TOTAL: <span class="text-info fw-bold"><%= partido.total_apostado || 0 %> GmC</span>
+                <i class="fas fa-vault text-info me-1"></i> BOLSA TOTAL: <span class="text-info fw-bold bolsa-partido-<%= partido.id %>"><%= partido.total_apostado || 0 %> GmC</span>
               </span>
             </div>
 
@@ -195,7 +194,6 @@
   </div>
 </div>
 
-<!-- CHAT Y SCRIPTS SE MANTIENEN IGUAL -->
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
@@ -291,7 +289,28 @@
   });
 
   socket.on('mensaje_borrado', (id) => document.getElementById(`msg-${id}`)?.remove());
-  socket.on('update_porra', () => location.reload());
+
+  // --- LÓGICA DE ACTUALIZACIÓN LIVE (SIN RECARGA) ---
+
+  socket.on('actualizar_bolsa_live', (data) => {
+    const bolsas = document.querySelectorAll(`.bolsa-partido-${data.id_partido}`);
+    bolsas.forEach(el => {
+      el.innerText = `${data.nuevo_total} GmC`;
+      el.style.color = "#00ff00"; // Destello verde
+      setTimeout(() => el.style.color = "", 1000);
+    });
+  });
+
+  socket.on('partido_finalizado_live', (data) => {
+    const tarjetas = document.querySelectorAll(`.partido-card-${data.id_partido}`);
+    tarjetas.forEach(t => {
+      t.style.opacity = "0";
+      t.style.transform = "scale(0.8)";
+      setTimeout(() => t.remove(), 500);
+    });
+  });
+
+
 </script>
 </body>
 </html>
