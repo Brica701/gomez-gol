@@ -413,4 +413,44 @@ router.post('/chat/borrar', isAuthenticated, async (req, res) => {
     } else { res.status(403).json({error: "No permitido"}); }
 });
 
+//BANEOS DE USUARIOS
+router.post('/chat/banear', isAuthenticated, async (req, res) => {
+    const miRol = req.session.userRol; // Rol del que ejecuta la acción
+    const { usuario_a_banear, minutos } = req.body;
+
+    // Verificación de rango: Solo admin o moderador
+    if (miRol !== 'admin' && miRol !== 'moderador') {
+        return res.status(403).json({ error: "No tienes permisos de moderación." });
+    }
+
+    try {
+        // Obtener datos del usuario objetivo
+        const target = await db.query('SELECT rol FROM usuarios WHERE nombre = $1', [usuario_a_banear]);
+
+        if (target.rows.length === 0) return res.status(404).json({ error: "El usuario no existe." });
+
+        // PROTECCIÓN JERÁRQUICA: Nadie puede banear a un administrador
+        if (target.rows[0].rol === 'admin') {
+            return res.status(403).json({ error: "Acción bloqueada: No se puede banear a un Administrador." });
+        }
+
+        const minutosFinales = parseInt(minutos) || 1440; // 24h por defecto si no se indica tiempo
+
+        // Aplicar el baneo en la base de datos
+        await db.query(`
+            UPDATE usuarios 
+            SET ban_hasta = NOW() + ($1 || ' minutes')::interval 
+            WHERE nombre = $2
+        `, [minutosFinales, usuario_a_banear]);
+
+        res.json({
+            success: true,
+            mensaje: `Usuario ${usuario_a_banear} baneado por ${minutosFinales} minutos.`
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: "Error interno del servidor." });
+    }
+});
+
 module.exports = router;

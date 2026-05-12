@@ -47,6 +47,10 @@
       font-weight: 800;
     }
 
+    /* Estilo para el botón de baneo */
+    .btn-ban { cursor: pointer; display: none; font-size: 0.7rem; vertical-align: middle; }
+    .msg:hover .btn-ban { display: inline-block; }
+
     .partidos-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -93,8 +97,12 @@
   <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
     <div class="d-flex align-items-center gap-2">
-      <!-- Muestra de racha en la cabecera -->
-      <div class="streak-badge px-2 py-1 rounded-pill d-none d-md-block">
+      <!-- BOTÓN CHAT GENERAL RECUPERADO -->
+      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
+        <i class="fas fa-globe me-1"></i> General
+      </button>
+      <!-- Muestra de racha -->
+      <div class="streak-badge px-2 py-1 rounded-pill">
         <i class="fas fa-fire me-1"></i> x<%= user.racha_ganador || 0 %>
       </div>
       <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
@@ -153,7 +161,7 @@
         <% })} %>
       </div>
 
-      <!-- SECCIÓN: PARTIDOS PENDIENTES -->
+      <!-- SECCIÓN: PARTIDOS DISPONIBLES -->
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
       <div class="partidos-grid mb-5">
         <%
@@ -192,7 +200,7 @@
     </div>
 
     <div class="col-lg-3">
-      <!-- NUEVO PANEL DE RACHAS -->
+      <!-- PANEL DE RACHAS -->
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-fire-alt text-warning me-2"></i> Mis Rachas Actuales</h5>
       <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -233,7 +241,6 @@
   </div>
 </div>
 
-<!-- CHAT Y SCRIPTS SE MANTIENEN IGUAL -->
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
@@ -267,8 +274,12 @@
     const div = document.createElement('div');
     div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
     div.id = `msg-${m.id}`;
+
+    // Botón de baneo (martillo) para moderadores, oculto si es mensaje propio
+    const btnBan = (canMod && !isMe) ? `<span class="btn-ban badge bg-warning text-dark ms-2" onclick="banearUsuario('${m.usuario}')">🔨</span>` : '';
+
     div.innerHTML = `
-      <span class="msg-user">${m.usuario}</span>
+      <span class="msg-user">${m.usuario} ${btnBan}</span>
       <div>${m.mensaje}</div>
       ${canMod ? `<span class="btn-del badge bg-danger rounded-circle" onclick="borrarMensaje(${m.id})">x</span>` : ''}
     `;
@@ -320,6 +331,38 @@
         body: JSON.stringify({id_mensaje: id})
       });
     }
+  }
+
+  async function banearUsuario(nombre) {
+    // Si intentas banear a un admin (prevención visual rápida)
+    if(nombre.toLowerCase() === 'admin') {
+      alert("No puedes banear a un administrador.");
+      return;
+    }
+
+    const input = prompt(`¿Cuántos minutos quieres banear a ${nombre}?`, "1440");
+    if (input === null || input.trim() === "") return;
+
+    const minutos = parseInt(input);
+    if (isNaN(minutos) || minutos <= 0) {
+      alert("Introduce minutos válidos.");
+      return;
+    }
+
+    try {
+      const res = await fetch('/chat/banear', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ usuario_a_banear: nombre, minutos: minutos })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(data.mensaje);
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (e) { alert("Error de conexión."); }
   }
 
   socket.on('nuevo_mensaje', (m) => {
