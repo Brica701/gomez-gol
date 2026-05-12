@@ -378,16 +378,29 @@ router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res)
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- RUTAS DEL CHAT ---
+// --- RUTAS DEL CHAT CON COMPROBACIÓN DE BANEO ---
 router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     const { mensaje, id_partido } = req.body;
     const usuario = req.session.userNombre;
     if (!mensaje || mensaje.trim() === "") return res.status(400).json({ error: "Vacío" });
+
     try {
+        // --- BLOQUE DE COMPROBACIÓN DE BANEO ---
+        const checkBan = await db.query(
+            'SELECT ban_hasta FROM usuarios WHERE nombre = $1 AND ban_hasta > NOW()',
+            [usuario]
+        );
+
+        if (checkBan.rows.length > 0) {
+            return res.status(403).json({ error: "Estás baneado del chat temporalmente." });
+        }
+        // ---------------------------------------
+
         const result = await db.query(`
             INSERT INTO chat_mensajes (usuario, mensaje, id_partido, fecha)
             VALUES ($1, $2, $3, NOW()) RETURNING id, usuario, mensaje, id_partido, fecha
         `, [usuario, mensaje, id_partido || null]);
+
         if (req.app.get('socketio')) req.app.get('socketio').emit('nuevo_mensaje', result.rows[0]);
         res.json({ success: true, mensaje: result.rows[0] });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -438,8 +451,8 @@ router.post('/chat/banear', isAuthenticated, async (req, res) => {
 
         // Aplicar el baneo en la base de datos
         await db.query(`
-            UPDATE usuarios 
-            SET ban_hasta = NOW() + ($1 || ' minutes')::interval 
+            UPDATE usuarios
+            SET ban_hasta = NOW() + ($1 || ' minutes')::interval
             WHERE nombre = $2
         `, [minutosFinales, usuario_a_banear]);
 

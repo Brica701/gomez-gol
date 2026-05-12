@@ -313,14 +313,30 @@
     if(isHidden) cargarMensajes();
   }
 
-  function enviarMensaje() {
+  async function enviarMensaje() {
     const input = document.getElementById('chat-input');
     const texto = input.value.trim();
     if(!texto) return;
-    socket.emit('enviar_mensaje', {
-      usuario: userNombre, mensaje: texto, id_partido: chatActual, tipo: 'texto'
-    });
-    input.value = '';
+
+    try {
+      const res = await fetch('/chat/enviar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          mensaje: texto,
+          id_partido: chatActual
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        input.value = '';
+      }
+    } catch (e) {
+      alert("Error al enviar mensaje");
+    }
   }
 
   async function borrarMensaje(id) {

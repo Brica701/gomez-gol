@@ -18,11 +18,21 @@ app.setSocketIo = function(io) {
     console.log("🔌 Socket.io inyectado correctamente en la App");
     this.set('socketio', io);
 
-    // Dentro de app.setSocketIo en app.js
-    // --- DENTRO DE app.setSocketIo ---
     io.on('connection', (socket) => {
         socket.on('enviar_mensaje', async (data) => {
             try {
+                // --- BLOQUE DE BANEO: Verificar si el usuario está castigado ---
+                const checkBan = await db.query(
+                    'SELECT ban_hasta FROM usuarios WHERE nombre = $1 AND ban_hasta > NOW()',
+                    [data.usuario]
+                );
+
+                if (checkBan.rows.length > 0) {
+                    console.log(`🚫 Mensaje bloqueado: ${data.usuario} está baneado.`);
+                    return; // No ejecutamos el INSERT ni el EMIT
+                }
+                // ------------------------------------------------------------
+
                 const result = await db.query(
                     'INSERT INTO chat_mensajes (usuario, mensaje, id_partido, tipo) VALUES ($1, $2, $3, $4) RETURNING id',
                     [data.usuario, data.mensaje, data.id_partido || null, data.tipo || 'texto']
