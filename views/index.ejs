@@ -49,11 +49,14 @@
       font-weight: 900; margin: 0 auto; font-size: 0.65rem;
     }
 
+    /* Inputs con letra negra para legibilidad */
     .form-control-mobile {
-      background: rgba(255, 255, 255, 0.1) !important;
+      background: rgba(255, 255, 255, 0.9) !important;
       border: 1px solid rgba(255, 255, 255, 0.2) !important;
-      color: #ffffff !important; border-radius: 10px; text-align: center;
+      color: #000000 !important; border-radius: 10px; text-align: center;
+      font-weight: bold;
     }
+    .form-control-mobile::placeholder { color: #666; }
 
     .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
 
@@ -98,9 +101,49 @@
 <div class="container mt-3 mb-5">
   <div class="row g-4">
     <div class="col-lg-9">
-      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Próximas Jornadas</h5>
+
+      <!-- SECCIÓN: MIS APUESTAS -->
+      <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
+      <div class="partidos-grid mb-5">
+        <%
+        let apostados = partidos.filter(p => apuestas_usuario.find(a => a.id_partido === p.id));
+        if(apostados.length === 0) {
+        %>
+          <div class="col-12 opacity-50 small ps-2">No has realizado apuestas todavía.</div>
+        <% } else {
+        apostados.forEach(partido => {
+          const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
+        %>
+        <div class="card glass-card p-3 shadow-sm border-success">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
+            <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
+          </div>
+          <div class="row align-items-center text-center my-2">
+            <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_a %></div>
+            <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
+            <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_b %></div>
+          </div>
+          <div class="text-center mb-2">
+              <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
+                <i class="fas fa-vault text-info me-1"></i> BOLSA: <span class="text-info fw-bold"><%= partido.total_apostado || 0 %> GmC</span>
+              </span>
+          </div>
+          <div class="text-center py-2 rounded-3 bg-white shadow-sm border border-success">
+            <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: <%= yaAposto.goles_a %> - <%= yaAposto.goles_b %></span>
+            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(<%= yaAposto.apostado %> GmC)</div>
+          </div>
+        </div>
+        <% })} %>
+      </div>
+
+      <!-- SECCIÓN: PARTIDOS PENDIENTES -->
+      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
       <div class="partidos-grid">
-        <% partidos.forEach(partido => { %>
+        <%
+        let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
+        pendientes.forEach(partido => {
+        %>
           <div class="card glass-card p-3 shadow-sm">
             <div class="d-flex justify-content-between mb-2">
               <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
@@ -118,22 +161,15 @@
               </span>
             </div>
 
-            <% const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id); %>
-            <% if (yaAposto) { %>
-              <div class="text-center py-2 rounded-3 bg-success bg-opacity-20 border border-success border-opacity-25">
-                <span class="text-success small fw-bold">APUESTA: <%= yaAposto.goles_a %> - <%= yaAposto.goles_b %></span>
+            <form action="/apostar" method="POST" class="mt-2">
+              <input type="hidden" name="id_partido" value="<%= partido.id %>">
+              <div class="row g-1">
+                <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required></div>
+                <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required></div>
+                <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required></div>
+                <div class="col-2"><button type="submit" class="btn btn-bet w-100 py-1"><i class="fas fa-check"></i></button></div>
               </div>
-            <% } else { %>
-              <form action="/apostar" method="POST" class="mt-2">
-                <input type="hidden" name="id_partido" value="<%= partido.id %>">
-                <div class="row g-1">
-                  <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required></div>
-                  <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required></div>
-                  <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required></div>
-                  <div class="col-2"><button type="submit" class="btn btn-bet w-100 py-1"><i class="fas fa-check"></i></button></div>
-                </div>
-              </form>
-            <% } %>
+            </form>
           </div>
         <% }) %>
       </div>
@@ -159,6 +195,7 @@
   </div>
 </div>
 
+<!-- CHAT Y SCRIPTS SE MANTIENEN IGUAL -->
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>

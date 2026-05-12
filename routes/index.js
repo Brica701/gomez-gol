@@ -133,13 +133,14 @@ router.get('/', isAuthenticated, async (req, res) => {
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
 
         // Adaptado: IF/TIMESTAMPDIFF por CASE/EXTRACT de Postgres
+        // BUSCA ESTA PARTE EN TU router.get('/')
         const partidosRes = await db.query(`
             SELECT p.*,
-                   (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as bote_total,
-                   CASE 
-                     WHEN ABS(EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 120 AND estado != 'finalizado' THEN 1 
-                     ELSE 0 
-                   END as en_vivo
+                   (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado, -- Cambiado de bote_total a total_apostado
+                   CASE
+                       WHEN ABS(EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 120 AND estado != 'finalizado' THEN 1
+                       ELSE 0
+                       END as en_vivo
             FROM partidos p
             WHERE estado != 'finalizado'
             ORDER BY fecha_partido ASC
