@@ -236,14 +236,23 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send("Error en el panel: " + err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO DE BOTE (CORREGIDO) ---
+// --- FINALIZAR PARTIDO Y REPARTO DE BOTE (VERSION CORREGIDA Y ASEGURADA) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
-    const { id_partido, resultado_a, resultado_b } = req.body;
+    // Forzamos que los resultados sean números enteros
+    const id_partido = req.body.id_partido;
+    const resA = parseInt(req.body.resultado_a);
+    const resB = parseInt(req.body.resultado_b);
+
+    if (isNaN(resA) || isNaN(resB)) {
+        return res.redirect(`/admin?error=Debes ingresar resultados válidos`);
+    }
+
     try {
         const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
-        const boteTotal = resBote.rows[0].total || 0;
+        const boteTotal = parseInt(resBote.rows[0].total) || 0;
 
-        await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resultado_a, resultado_b, id_partido]);
+        await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resA, resB, id_partido]);
+
         const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
         const apuestas = resApuestas.rows;
 
@@ -253,59 +262,59 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         let totalApostadoTendencia = 0;
 
         for (let ap of apuestas) {
-            const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resultado_a, resultado_b);
+            // Pasamos los valores asegurando que son números
+            const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
 
             await db.query('UPDATE apuestas SET puntos_obtenidos = $1 WHERE id = $2', [puntosFinales, ap.id]);
             await db.query('UPDATE usuarios SET puntos = puntos + $1 WHERE nombre = $2', [puntosFinales, ap.usuario]);
 
             if (puntosFinales === 3) {
                 ganadoresPleno.push(ap);
-                totalApostadoPleno += ap.apostado;
+                totalApostadoPleno += parseInt(ap.apostado);
             } else if (puntosFinales === 1) {
                 ganadoresTendencia.push(ap);
-                totalApostadoTendencia += ap.apostado;
+                totalApostadoTendencia += parseInt(ap.apostado);
             }
         }
 
+        // REPARTO DE DINERO (GmCoins)
         if (boteTotal > 0) {
-            const boteRepartible = Math.floor(boteTotal * 0.80);
+            const boteRepartible = Math.floor(boteTotal * 0.80); // 20% de comisión para la casa
+
             if (ganadoresPleno.length > 0 && ganadoresTendencia.length > 0) {
                 const bolsaPleno = boteRepartible * 0.70;
                 const bolsaTendencia = boteRepartible * 0.30;
+
                 for (let g of ganadoresPleno) {
-                    let suParte = Math.floor((g.apostado / totalApostadoPleno) * bolsaPleno);
+                    let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
                 }
                 for (let t of ganadoresTendencia) {
-                    let suParte = Math.floor((t.apostado / totalApostadoTendencia) * bolsaTendencia);
+                    let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
                 }
             } else if (ganadoresPleno.length > 0) {
                 for (let g of ganadoresPleno) {
-                    let suParte = Math.floor((g.apostado / totalApostadoPleno) * boteRepartible);
+                    let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
                 }
             } else if (ganadoresTendencia.length > 0) {
                 for (let t of ganadoresTendencia) {
-                    let suParte = Math.floor((t.apostado / totalApostadoTendencia) * boteRepartible);
+                    let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
                 }
             }
         }
 
-        // --- CAMBIO CLAVE AQUÍ ---
-        // Emitimos que el partido ha finalizado específicamente para que el cliente oculte el partido
-        // o lo marque como finalizado sin recargar la página completa.
         if (req.app.get('socketio')) {
-            req.app.get('socketio').emit('partido_finalizado_live', {
-                id_partido,
-                resultado_a,
-                resultado_b
-            });
+            req.app.get('socketio').emit('partido_finalizado_live', { id_partido, resultado_a: resA, resultado_b: resB });
         }
 
-        res.redirect(`/admin?success=Reparto completado`);
-    } catch (err) { res.status(500).send(err.message); }
+        res.redirect(`/admin?success=Reparto completado: ${boteTotal} GmC distribuidos`);
+    } catch (err) {
+        console.error("ERROR EN REPARTO:", err);
+        res.status(500).send(err.message);
+    }
 });
 
 // --- GESTIÓN DE USUARIOS ---
