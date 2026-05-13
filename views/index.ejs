@@ -351,6 +351,7 @@
   };
 
   // --- AJAX APUESTAS ---
+  // --- AJAX APUESTAS ---
   document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -375,10 +376,54 @@
 
         if (res.ok) {
           const card = form.closest('.card');
+          const misApuestasContainer = document.getElementById('mis-apuestas-container');
+          const noApuestasMsg = document.getElementById('no-apuestas-msg');
+
+          // 1. Ocultar el mensaje de "No tienes apuestas" si existe
+          if (noApuestasMsg) noApuestasMsg.style.display = 'none';
+
+          // 2. Clonar la tarjeta para moverla arriba
+          const nuevaCard = card.cloneNode(true);
+
+          // 3. Limpiar la nueva tarjeta (quitar formulario, añadir estilo de éxito)
+          nuevaCard.classList.add('border-success');
+          nuevaCard.querySelector('form').remove(); // Quitamos el formulario de apuesta
+
+          // 4. Crear el bloque de "Tu Apuesta" que aparece en las realizadas
+          const divApuesta = document.createElement('div');
+          divApuesta.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success mt-2';
+          divApuesta.innerHTML = `
+            <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: ${data.goles_a} - ${data.goles_b}</span>
+            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(${data.apostado} GmC)</div>
+          `;
+          nuevaCard.appendChild(divApuesta);
+
+          // 5. Animación: Desaparece de abajo y aparece arriba
+          card.style.transition = 'all 0.4s ease';
           card.style.opacity = '0';
-          setTimeout(() => card.remove(), 400);
+          card.style.transform = 'scale(0.8)';
+
+          setTimeout(() => {
+            card.remove();
+            nuevaCard.style.opacity = '0';
+            nuevaCard.style.transform = 'translateY(-20px)';
+            misApuestasContainer.prepend(nuevaCard); // Poner al principio de la lista
+
+            // Forzar reflujo para la animación de entrada
+            setTimeout(() => {
+              nuevaCard.style.transition = 'all 0.4s ease';
+              nuevaCard.style.opacity = '1';
+              nuevaCard.style.transform = 'translateY(0)';
+            }, 50);
+          }, 400);
+
+          // 6. Actualizar créditos en el header
           const creditosEl = document.getElementById('user-creditos-top');
-          if(creditosEl) creditosEl.innerText = parseInt(creditosEl.innerText) - parseInt(data.apostado);
+          if(creditosEl) {
+            const saldoActual = parseInt(creditosEl.innerText);
+            creditosEl.innerText = saldoActual - parseInt(data.apostado);
+          }
+
         } else {
           const errData = await res.json();
           alert(errData.error || "Error al apostar");
@@ -386,6 +431,7 @@
           btn.innerHTML = '<i class="fas fa-check"></i>';
         }
       } catch (e) {
+        console.error(e);
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-check"></i>';
       }
