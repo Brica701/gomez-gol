@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reglas | Gomez-Gol 2026</title>
+    <link rel="icon" href="data:,">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --streak-gold: #ffc107;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+            url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh; color: #ffffff !important;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        h4, h5, h6, span, label, div, p, li { color: #ffffff !important; }
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+        }
+
+        .rule-number {
+            width: 35px; height: 35px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 0.9rem; flex-shrink: 0;
+        }
+
+        .highlight-gold { color: var(--streak-gold) !important; font-weight: bold; }
+        .highlight-success { color: var(--primary-color) !important; font-weight: bold; }
+
+        .list-unstyled > li {
+            margin-bottom: 2.5rem;
+            display: flex; gap: 15px;
+            align-items: flex-start;
+        }
+
+        .sub-list { list-style: none; padding-left: 0; margin-top: 10px; }
+        .sub-list li { margin-bottom: 8px; font-size: 0.9rem; position: relative; padding-left: 20px; }
+        .sub-list li::before { content: "•"; position: absolute; left: 0; color: var(--primary-color); font-weight: bold; }
+
+        .btn-back {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        .btn-back:hover { background: var(--primary-color); border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark sticky-top shadow">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand fw-bold" href="/">GOMEZ<span class="text-info">-GOL</span></a>
+        <a href="/" class="btn btn-back btn-sm rounded-pill px-3 text-white fw-bold">
+            <i class="fas fa-arrow-left me-1"></i> Volver
+        </a>
+    </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-uppercase"><i class="fas fa-scroll text-success me-2"></i>Manual del Jugador</h2>
+        <p class="opacity-75">Todo lo que necesitas saber para dominar el Ranking</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card glass-card p-4 p-md-5 shadow-lg">
+
+                <ul class="list-unstyled">
+                    <!-- 1. SISTEMA DE PUNTOS -->
+                    <li>
+                        <div class="rule-number">1</div>
+                        <div>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Puntos (El Ranking)</h5>
+                            <p class="small opacity-80">Los puntos determinan quién manda en el Ranking Global. En cada partido puedes obtener:</p>
+                            <ul class="sub-list">
+                                <li><span class="highlight-success">3 Puntos (Pleno):</span> Si aciertas el resultado exacto (ej. apostaste 2-1 y quedaron 2-1).</li>
+                                <li><span class="highlight-success">2 Puntos (Tendencia):</span> Si aciertas quién gana o si hay empate, pero no el número de goles (ej. apostaste 3-0 y quedaron 1-0).</li>
+                                <li><span class="highlight-success">1 Punto (Empate Genérico):</span> Si apostaste por un empate (ej. 1-1) y el partido terminó en empate, pero con otros goles (ej. 2-2).</li>
+                                <li><span class="text-danger fw-bold">0 Puntos:</span> Si no acertaste ni el ganador ni el empate.</li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- 2. MONEDAS Y PREMIOS -->
+                    <li>
+                        <div class="rule-number">2</div>
+                        <div>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Monedas (GmCoins) y Premios</h5>
+                            <p class="small opacity-80">Las monedas son el motor de tus apuestas:</p>
+                            <ul class="sub-list">
+                                <li><span class="highlight-gold">La Apuesta:</span> El mínimo para entrar en un partido son 50 GmCoins.</li>
+                                <li><span class="highlight-gold">El Bote (Pool):</span> El 80% de lo apostado se reparte entre los ganadores:
+                                    <div class="ps-3 mt-2">
+                                        <small class="d-block">• <strong>70% del Bote</strong> para los que hicieron Pleno (3 puntos).</small>
+                                        <small class="d-block">• <strong>30% del Bote</strong> para los que acertaron Tendencia (1 o 2 puntos).</small>
+                                        <small class="d-block opacity-75 mt-1"><em>Si solo hay ganadores de un tipo, ¡se llevan el 100% del bote repartible!</em></small>
+                                    </div>
+                                </li>
+                                <li><span class="highlight-gold">Reparto Proporcional:</span> Cuanto más apuestes tú en comparación con los demás ganadores, mayor será tu parte del premio.</li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- 3. RACHAS -->
+                    <li>
+                        <div class="rule-number">3</div>
+                        <div>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Rachas (Bonus Extra)</h5>
+                            <p class="small opacity-80">Premiamos la regularidad con monedas garantizadas (independientes del bote):</p>
+                            <ul class="sub-list">
+                                <li><span class="highlight-gold">Racha de Ganador:</span> Si aciertas tendencia en 2 o más partidos seguidos: <br>
+                                    <span class="text-info small fw-bold">Bonus: (Nº de racha) x 50 GmCoins.</span>
+                                </li>
+                                <li><span class="highlight-gold">Racha Exacta (Plenos):</span> Si aciertas el resultado exacto en 2 o más partidos seguidos: <br>
+                                    <span class="text-info small fw-bold">Bonus: (Nº de racha) x 100 GmCoins.</span>
+                                </li>
+                                <li><span class="text-danger fw-bold">¡Cuidado!:</span> Si fallas un partido totalmente (0 puntos), tus rachas volverán a cero.</li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- 4. REGLAS DE ORO -->
+                    <li>
+                        <div class="rule-number">4</div>
+                        <div>
+                            <h5 class="fw-bold text-success text-uppercase">Reglas de Oro</h5>
+                            <ul class="sub-list">
+                                <li><span class="fw-bold">Cierre de Apuestas:</span> Se bloquean automáticamente 10 minutos antes del inicio o si el admin lo pone "En Vivo".</li>
+                                <li><span class="fw-bold">Fair Play:</span> El chat es para disfrutar. Los admins banean a quien no respete las normas.</li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="mt-4 p-3 rounded-3 bg-dark bg-opacity-50 border border-info border-opacity-25 text-center">
+                    <p class="small m-0 opacity-75 italic">
+                        <i class="fas fa-robot me-2"></i> Los cálculos son automáticos y gestionados por el sistema Gomez-Gol.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

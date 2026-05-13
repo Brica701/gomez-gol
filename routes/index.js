@@ -471,4 +471,12 @@ router.post('/chat/banear', isAuthenticated, async (req, res) => {
     }
 });
 
+//REGLAS
+router.get('/reglas', isAuthenticated, (req, res) => {
+    res.render('reglas', {
+        user: req.session.userNombre,
+        userRol: req.session.userRol
+    });
+});
+
 module.exports = router;

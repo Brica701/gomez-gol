@@ -121,6 +121,10 @@
   <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
     <div class="d-flex align-items-center gap-2">
+      <!-- NUEVO LINK A REGLAS -->
+      <a href="/reglas" class="btn btn-outline-warning rounded-pill px-3 btn-sm fw-bold">
+        <i class="fas fa-book me-1"></i> Reglas
+      </a>
       <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
         <i class="fas fa-globe me-1"></i> General
       </button>
@@ -137,6 +141,7 @@
   </div>
 </nav>
 
+<!-- EL RESTO DEL CÓDIGO SE MANTIENE EXACTAMENTE IGUAL -->
 <div class="container mt-3 mb-5">
   <!-- SELECTOR DE FECHA -->
   <div class="date-filter-box d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -288,7 +293,7 @@
     </div>
   </div>
 </div>
-
+<!-- SCRIPT Y CHAT CONTAINER SE MANTIENEN IGUAL -->
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
@@ -314,7 +319,6 @@
   const userRol = "<%= user.rol %>";
   let chatActual = null;
 
-  // --- LÓGICA DE FILTRADO POR FECHA ---
   function filterMatchesByDate(selectedDate) {
     const items = document.querySelectorAll('.match-item');
     let countVisible = 0;
@@ -343,15 +347,12 @@
     filterMatchesByDate(iso);
   }
 
-  // Al cargar, mostramos HOY
   window.onload = () => {
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('main-date-picker').value = hoy;
     filterMatchesByDate(hoy);
   };
 
-  // --- AJAX APUESTAS ---
-  // --- AJAX APUESTAS ---
   document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -378,18 +379,12 @@
           const card = form.closest('.card');
           const misApuestasContainer = document.getElementById('mis-apuestas-container');
           const noApuestasMsg = document.getElementById('no-apuestas-msg');
-
-          // 1. Ocultar el mensaje de "No tienes apuestas" si existe
           if (noApuestasMsg) noApuestasMsg.style.display = 'none';
 
-          // 2. Clonar la tarjeta para moverla arriba
           const nuevaCard = card.cloneNode(true);
-
-          // 3. Limpiar la nueva tarjeta (quitar formulario, añadir estilo de éxito)
           nuevaCard.classList.add('border-success');
-          nuevaCard.querySelector('form').remove(); // Quitamos el formulario de apuesta
+          nuevaCard.querySelector('form').remove();
 
-          // 4. Crear el bloque de "Tu Apuesta" que aparece en las realizadas
           const divApuesta = document.createElement('div');
           divApuesta.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success mt-2';
           divApuesta.innerHTML = `
@@ -398,7 +393,6 @@
           `;
           nuevaCard.appendChild(divApuesta);
 
-          // 5. Animación: Desaparece de abajo y aparece arriba
           card.style.transition = 'all 0.4s ease';
           card.style.opacity = '0';
           card.style.transform = 'scale(0.8)';
@@ -407,9 +401,8 @@
             card.remove();
             nuevaCard.style.opacity = '0';
             nuevaCard.style.transform = 'translateY(-20px)';
-            misApuestasContainer.prepend(nuevaCard); // Poner al principio de la lista
+            misApuestasContainer.prepend(nuevaCard);
 
-            // Forzar reflujo para la animación de entrada
             setTimeout(() => {
               nuevaCard.style.transition = 'all 0.4s ease';
               nuevaCard.style.opacity = '1';
@@ -417,7 +410,6 @@
             }, 50);
           }, 400);
 
-          // 6. Actualizar créditos en el header
           const creditosEl = document.getElementById('user-creditos-top');
           if(creditosEl) {
             const saldoActual = parseInt(creditosEl.innerText);
@@ -438,7 +430,6 @@
     });
   });
 
-  // --- CHAT Y SOCKETS (RESTO IGUAL) ---
   function renderSingleMessage(m) {
     const container = document.getElementById('chat-messages');
     if (!container) return;
