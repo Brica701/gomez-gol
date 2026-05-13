@@ -114,11 +114,21 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- PANEL PRINCIPAL (Actualizado para bloqueo visual de apuestas en curso) ---
+// --- PANEL PRINCIPAL (Actualizado para cargar RACHAS desde DB) ---
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
-        const userRes = await db.query('SELECT * FROM usuarios WHERE nombre = $1', [usuarioLogueado]);
+
+        // Consulta mejorada con LEFT JOIN para obtener rachas reales de la tabla rachas
+        const userRes = await db.query(`
+            SELECT u.*, 
+                   COALESCE(r.racha_exacta, 0) as racha_exacta, 
+                   COALESCE(r.racha_ganador, 0) as racha_ganador
+            FROM usuarios u
+            LEFT JOIN rachas r ON u.nombre = r.usuario_nombre
+            WHERE u.nombre = $1
+        `, [usuarioLogueado]);
+
         const userData = userRes.rows;
 
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
