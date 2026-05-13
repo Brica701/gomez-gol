@@ -142,16 +142,28 @@ async function sincronizarPartidos() {
             if (p.status === 'FINISHED' || p.status === 'AWARDED') estadoFinal = 'finalizado';
             if (p.status === 'IN_PLAY' || p.status === 'LIVE') estadoFinal = 'en_vivo';
 
-            // Actualizamos o insertamos el partido
+            // Actualizamos o insertamos el partido (Editado para incluir IDs de escudos)
             await db.query(`
-                INSERT INTO partidos (id, equipo_a, equipo_b, fecha_partido, resultado_a, resultado_b, estado)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (id) DO UPDATE SET
+                INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    ON CONFLICT (id) DO UPDATE SET
                     resultado_a = EXCLUDED.resultado_a,
-                    resultado_b = EXCLUDED.resultado_b,
-                    estado = EXCLUDED.estado,
-                    fecha_partido = EXCLUDED.fecha_partido;
-            `, [id_externo, p.homeTeam.shortName || p.homeTeam.name, p.awayTeam.shortName || p.awayTeam.name, p.utcDate, goles_a, goles_b, estadoFinal]);
+                                            resultado_b = EXCLUDED.resultado_b,
+                                            estado = EXCLUDED.estado,
+                                            fecha_partido = EXCLUDED.fecha_partido,
+                                            id_api_a = EXCLUDED.id_api_a,
+                                            id_api_b = EXCLUDED.id_api_b;
+            `, [
+                id_externo,
+                p.homeTeam.shortName || p.homeTeam.name,
+                p.awayTeam.shortName || p.awayTeam.name,
+                p.homeTeam.id, // ID escudo local
+                p.awayTeam.id, // ID escudo visitante
+                p.utcDate,
+                goles_a,
+                goles_b,
+                estadoFinal
+            ]);
 
             // 🔥 DETECCIÓN DE CIERRE AUTOMÁTICO 🔥
             // Si el partido acaba de pasar a 'finalizado', disparamos el reparto

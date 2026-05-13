@@ -78,7 +78,7 @@ router.get('/mis-ganancias', isAuthenticated, async (req, res) => {
     const usuario = req.session.userNombre;
     try {
         const result = await db.query(`
-            SELECT p.equipo_a, p.equipo_b, p.resultado_a, p.resultado_b,
+            SELECT p.equipo_a, p.equipo_b, p.id_api_a, p.id_api_b, p.resultado_a, p.resultado_b,
                    a.goles_a, a.goles_b, a.apostado, a.puntos_obtenidos, a.premio_monedas,
                    TO_CHAR(p.fecha_partido, 'DD/MM HH24:MI') as fecha
             FROM apuestas a
@@ -114,18 +114,17 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- PANEL PRINCIPAL (Actualizado para cargar RACHAS desde DB) ---
+// --- PANEL PRINCIPAL ---
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
 
-        // Consulta mejorada con LEFT JOIN para obtener rachas reales de la tabla rachas
         const userRes = await db.query(`
-            SELECT u.*, 
-                   COALESCE(r.racha_exacta, 0) as racha_exacta, 
+            SELECT u.*,
+                   COALESCE(r.racha_exacta, 0) as racha_exacta,
                    COALESCE(r.racha_ganador, 0) as racha_ganador
             FROM usuarios u
-            LEFT JOIN rachas r ON u.nombre = r.usuario_nombre
+                     LEFT JOIN rachas r ON u.nombre = r.usuario_nombre
             WHERE u.nombre = $1
         `, [usuarioLogueado]);
 
@@ -136,7 +135,6 @@ router.get('/', isAuthenticated, async (req, res) => {
         const partidosRes = await db.query(`
             SELECT p.*,
                    (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
-                   -- Bloqueado si el estado es en_vivo O si faltan menos de 10 min
                    CASE
                        WHEN estado = 'en_vivo' OR (EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 10 THEN 1
                        ELSE 0
@@ -153,7 +151,7 @@ router.get('/', isAuthenticated, async (req, res) => {
         const rankingRes = await db.query('SELECT nombre, puntos, creditos FROM usuarios ORDER BY puntos DESC, creditos DESC, nombre ASC');
 
         const apuestasRes = await db.query(`
-            SELECT a.*, p.equipo_a, p.equipo_b, p.resultado_a as goles_a_real, p.resultado_b as goles_b_real, p.estado as partido_estado
+            SELECT a.*, p.equipo_a, p.equipo_b, p.id_api_a, p.id_api_b, p.resultado_a as goles_a_real, p.resultado_b as goles_b_real, p.estado as partido_estado
             FROM apuestas a JOIN partidos p ON a.id_partido = p.id
             WHERE a.usuario = $1 ORDER BY p.fecha_partido DESC
         `, [usuarioLogueado]);
@@ -176,33 +174,41 @@ router.get('/', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- REGISTRO DE APUESTAS ---
+// --- REGISTRO DE APUESTAS (Mejorado para AJAX) ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
     const cantidadApostada = parseInt(apostado);
 
-    if (cantidadApostada < 50) return res.redirect('/?error=' + encodeURIComponent("Mínimo 50 GmCoins."));
+    // Función auxiliar para responder según el tipo de petición
+    const responderError = (msj) => {
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.status(400).json({ error: msj });
+        }
+        return res.redirect('/?error=' + encodeURIComponent(msj));
+    };
+
+    if (cantidadApostada < 50) return responderError("Mínimo 50 GmCoins.");
 
     try {
         const yaAposto = await db.query('SELECT id FROM apuestas WHERE usuario = $1 AND id_partido = $2', [usuario, id_partido]);
-        if (yaAposto.rows.length > 0) return res.redirect('/?error=' + encodeURIComponent("Ya has realizado una apuesta para este partido."));
+        if (yaAposto.rows.length > 0) return responderError("Ya has realizado una apuesta para este partido.");
 
         const userRes = await db.query('SELECT creditos FROM usuarios WHERE nombre = $1', [usuario]);
         const partidoRes = await db.query('SELECT estado, fecha_partido FROM partidos WHERE id = $1', [id_partido]);
 
-        if (!partidoRes.rows[0]) return res.redirect('/?error=' + encodeURIComponent("Partido no encontrado."));
-        if (userRes.rows[0].creditos < cantidadApostada) return res.redirect('/?error=' + encodeURIComponent("No tienes suficientes GmCoins."));
+        if (!partidoRes.rows[0]) return responderError("Partido no encontrado.");
+        if (userRes.rows[0].creditos < cantidadApostada) return responderError("No tienes suficientes GmCoins.");
 
         const ahora = new Date();
         const horaPartido = new Date(partidoRes.rows[0].fecha_partido);
         const diffMinutos = (horaPartido - ahora) / 60000;
 
         if (partidoRes.rows[0].estado !== 'abierto') {
-            return res.redirect('/?error=' + encodeURIComponent("Las apuestas están cerradas: El partido ya está en curso o finalizado."));
+            return responderError("Las apuestas están cerradas.");
         }
         if (diffMinutos < 10) {
-            return res.redirect('/?error=' + encodeURIComponent("Bloqueado: No se puede apostar en los 10 min previos al saque inicial."));
+            return responderError("Bloqueado: Faltan menos de 10 min.");
         }
 
         await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
@@ -210,8 +216,13 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             [usuario, id_partido, goles_a, goles_b, cantidadApostada]);
 
         const resNuevoTotal = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
+
         if (req.app.get('socketio')) {
             req.app.get('socketio').emit('actualizar_bolsa_live', { id_partido, nuevo_total: resNuevoTotal.rows[0].total || 0 });
+        }
+
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.json({ success: true, nuevoSaldo: userRes.rows[0].creditos - cantidadApostada });
         }
         res.redirect('/?success=' + encodeURIComponent(`Apuesta realizada con éxito`));
     } catch (err) { res.status(500).send(err.message); }
@@ -223,7 +234,7 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
         const usuarios = await db.query('SELECT * FROM usuarios ORDER BY nombre ASC');
         const partidos = await db.query('SELECT * FROM partidos ORDER BY fecha_partido DESC');
         const transacciones = await db.query(`
-            SELECT a.*, p.equipo_a, p.equipo_b FROM apuestas a JOIN partidos p ON a.id_partido = p.id ORDER BY a.id DESC
+            SELECT a.*, p.equipo_a, p.equipo_b, p.id_api_a, p.id_api_b FROM apuestas a JOIN partidos p ON a.id_partido = p.id ORDER BY a.id DESC
         `);
         res.render('admin_panel', {
             usuarios: usuarios.rows,
@@ -234,7 +245,34 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO (LOGICA MANUAL) ---
+// --- GESTIÓN DE PARTIDOS (ADMIN) ---
+router.post('/admin/partidos/add', isAuthenticated, isAdmin, async (req, res) => {
+    const { equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido } = req.body;
+    try {
+        await db.query(
+            'INSERT INTO partidos (equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, estado) VALUES ($1, $2, $3, $4, $5, \'abierto\')',
+            [equipo_a, equipo_b, id_api_a || null, id_api_b || null, fecha_partido]
+        );
+        res.redirect('/admin');
+    } catch (err) { res.status(500).send(err.message); }
+});
+
+router.post('/admin/partidos/en-vivo', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        await db.query('UPDATE partidos SET estado = \'en_vivo\' WHERE id = $1', [req.body.id_partido]);
+        res.redirect('/admin');
+    } catch (err) { res.status(500).send(err.message); }
+});
+
+router.post('/admin/partidos/delete', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        await db.query('DELETE FROM apuestas WHERE id_partido = $1', [req.body.id_partido]);
+        await db.query('DELETE FROM partidos WHERE id = $1', [req.body.id_partido]);
+        res.redirect('/admin');
+    } catch (err) { res.status(500).send(err.message); }
+});
+
+// --- FINALIZAR PARTIDO Y REPARTO ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
     const { id_partido, resultado_a, resultado_b } = req.body;
     const resA = parseInt(resultado_a);
