@@ -21,6 +21,8 @@
       background-size: cover; background-position: center; background-attachment: fixed;
       min-height: 100vh; color: #ffffff !important;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
     }
 
     h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important; }
@@ -110,8 +112,45 @@
     .btn-del { position: absolute; top: -5px; right: -5px; cursor: pointer; display: none; }
     .msg:hover .btn-del { display: block; }
 
+    /* ESTILOS FOOTER MAXIMIZADOS */
+    .footer-glass {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(15px);
+      border-top: 1px solid var(--glass-border);
+      padding: 3rem 0 2rem 0;
+      margin-top: auto;
+    }
+
+    .logo-container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 180px;
+      height: 85px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+
+    .logo-container:hover {
+      transform: scale(1.05);
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
+    }
+
+    .footer-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform: scale(1.1);
+    }
+
     @media (max-width: 576px) {
       #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
+      .logo-container { width: 140px; height: 70px; }
     }
   </style>
 </head>
@@ -121,7 +160,6 @@
   <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
     <div class="d-flex align-items-center gap-2">
-      <!-- NUEVO LINK A REGLAS -->
       <a href="/reglas" class="btn btn-outline-warning rounded-pill px-3 btn-sm fw-bold">
         <i class="fas fa-book me-1"></i> Reglas
       </a>
@@ -141,9 +179,7 @@
   </div>
 </nav>
 
-<!-- EL RESTO DEL CÓDIGO SE MANTIENE EXACTAMENTE IGUAL -->
 <div class="container mt-3 mb-5">
-  <!-- SELECTOR DE FECHA -->
   <div class="date-filter-box d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h6 class="m-0 text-uppercase small fw-bold text-success"><i class="fas fa-calendar-day me-2"></i> Filtrar Partidos</h6>
     <div class="d-flex gap-2">
@@ -163,7 +199,6 @@
 
   <div class="row g-4">
     <div class="col-lg-9">
-      <!-- SECCIÓN: MIS APUESTAS -->
       <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
       <div id="mis-apuestas-container" class="partidos-grid mb-5">
         <%
@@ -208,7 +243,6 @@
         <% })} %>
       </div>
 
-      <!-- SECCIÓN: PARTIDOS DISPONIBLES -->
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
       <div id="disponibles-container" class="partidos-grid mb-5">
         <%
@@ -262,7 +296,6 @@
     </div>
 
     <div class="col-lg-3">
-      <!-- PANEL DE RACHAS -->
       <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-fire-alt text-warning me-2"></i> Mis Rachas Actuales</h5>
       <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -289,11 +322,40 @@
           </tbody>
         </table>
       </div>
-      <a href="/logout" class="btn btn-outline-danger btn-sm w-100">CERRAR SESIÓN</a>
+      <a href="/logout" class="btn btn-outline-danger btn-sm w-100 mb-3">CERRAR SESIÓN</a>
     </div>
   </div>
 </div>
-<!-- SCRIPT Y CHAT CONTAINER SE MANTIENEN IGUAL -->
+
+<footer class="footer-glass">
+  <div class="container">
+    <div class="row align-items-center justify-content-center g-4">
+      <div class="col-auto">
+        <div class="logo-container">
+          <img src="/images/cuadrotek.png" alt="CuadroTek" class="footer-logo">
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="logo-container">
+          <img src="/images/gomez_moreno_logo (1)-nobg.svg" alt="Gomez Moreno" class="footer-logo">
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="logo-container">
+          <img src="/images/mercasat.png" alt="Mercasat" class="footer-logo">
+        </div>
+      </div>
+    </div>
+    <div class="row mt-5">
+      <div class="col-12 text-center">
+        <p class="small opacity-50 mb-0" style="font-size: 0.75rem; letter-spacing: 2px;">
+          © 2026 GOMEZ-GOL | DESARROLLADO POR ISAAC CRUZ
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
 <div id="chat-container" class="glass-card shadow-lg flex-column">
   <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
     <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
