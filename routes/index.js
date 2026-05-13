@@ -17,42 +17,7 @@ function isAdmin(req, res, next) {
     res.redirect('/?error=' + encodeURIComponent("No tienes permisos de administrador"));
 }
 
-// --- FUNCIÓN ADAPTADA PARA EL MUNDIAL 2026 ---
-async function sincronizarPartidos() {
-    try {
-        const urlMundial = 'https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4429';
-        const response = await axios.get(urlMundial);
-
-        let partidosAPI = response.data.events;
-
-        if (!partidosAPI || partidosAPI.length === 0) {
-            console.log("ℹ️ El Mundial aún no tiene partidos definidos. Cargando liga regular por ahora...");
-            const resLiga = await axios.get('https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4335');
-            partidosAPI = resLiga.data.events;
-        }
-
-        if (!partidosAPI) return false;
-
-        for (const item of partidosAPI) {
-            const id_externo = item.idEvent;
-            const equipo_a = item.strHomeTeam;
-            const equipo_b = item.strAwayTeam;
-            const fecha = item.strTimestamp;
-
-            await db.query(`
-                INSERT INTO partidos (id, equipo_a, equipo_b, fecha_partido, estado)
-                VALUES ($1, $2, $3, $4, 'abierto')
-                    ON CONFLICT (id) DO UPDATE SET fecha_partido = EXCLUDED.fecha_partido
-            `, [id_externo, equipo_a, equipo_b, fecha]);
-        }
-        return true;
-    } catch (error) {
-        console.error("Error al sincronizar:", error.message);
-        return false;
-    }
-}
-
-// --- UTILIDADES DE PUNTUACIÓN (ACTUALIZADO: 3, 2, 1) ---
+// --- UTILIDADES DE PUNTUACIÓN (3, 2, 1) ---
 function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     if (realA === null || realB === null) return 0;
 
@@ -108,7 +73,7 @@ router.get('/logout', (req, res) => {
     res.redirect('/login');
 });
 
-// --- NUEVA RUTA: HISTORIAL DE GANANCIAS ---
+// --- HISTORIAL DE GANANCIAS ---
 router.get('/mis-ganancias', isAuthenticated, async (req, res) => {
     const usuario = req.session.userNombre;
     try {
@@ -149,7 +114,7 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- PANEL PRINCIPAL ---
+// --- PANEL PRINCIPAL (Actualizado para bloqueo visual de apuestas en curso) ---
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
@@ -161,8 +126,13 @@ router.get('/', isAuthenticated, async (req, res) => {
         const partidosRes = await db.query(`
             SELECT p.*,
                    (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
+                   -- Bloqueado si el estado es en_vivo O si faltan menos de 10 min
                    CASE
-                       WHEN ABS(EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 120 AND estado != 'finalizado' THEN 1
+                       WHEN estado = 'en_vivo' OR (EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 10 THEN 1
+                       ELSE 0
+                       END as bloqueado,
+                   CASE
+                       WHEN estado = 'en_vivo' THEN 1
                        ELSE 0
                        END as en_vivo
             FROM partidos p
@@ -206,17 +176,23 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
 
     try {
         const yaAposto = await db.query('SELECT id FROM apuestas WHERE usuario = $1 AND id_partido = $2', [usuario, id_partido]);
-        if (yaAposto.rows.length > 0) return res.redirect('/?error=' + encodeURIComponent("Ya has apostado."));
+        if (yaAposto.rows.length > 0) return res.redirect('/?error=' + encodeURIComponent("Ya has realizado una apuesta para este partido."));
 
         const userRes = await db.query('SELECT creditos FROM usuarios WHERE nombre = $1', [usuario]);
         const partidoRes = await db.query('SELECT estado, fecha_partido FROM partidos WHERE id = $1', [id_partido]);
 
-        if (userRes.rows[0].creditos < cantidadApostada) return res.redirect('/?error=' + encodeURIComponent("Créditos insuficientes"));
+        if (!partidoRes.rows[0]) return res.redirect('/?error=' + encodeURIComponent("Partido no encontrado."));
+        if (userRes.rows[0].creditos < cantidadApostada) return res.redirect('/?error=' + encodeURIComponent("No tienes suficientes GmCoins."));
 
         const ahora = new Date();
         const horaPartido = new Date(partidoRes.rows[0].fecha_partido);
-        if (partidoRes.rows[0].estado !== 'abierto' || (horaPartido - ahora) < 600000) {
-            return res.redirect('/?error=' + encodeURIComponent("Cerrado 10 min antes."));
+        const diffMinutos = (horaPartido - ahora) / 60000;
+
+        if (partidoRes.rows[0].estado !== 'abierto') {
+            return res.redirect('/?error=' + encodeURIComponent("Las apuestas están cerradas: El partido ya está en curso o finalizado."));
+        }
+        if (diffMinutos < 10) {
+            return res.redirect('/?error=' + encodeURIComponent("Bloqueado: No se puede apostar en los 10 min previos al saque inicial."));
         }
 
         await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
@@ -227,7 +203,7 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
         if (req.app.get('socketio')) {
             req.app.get('socketio').emit('actualizar_bolsa_live', { id_partido, nuevo_total: resNuevoTotal.rows[0].total || 0 });
         }
-        res.redirect('/?success=' + encodeURIComponent(`Apuesta confirmada`));
+        res.redirect('/?success=' + encodeURIComponent(`Apuesta realizada con éxito`));
     } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -248,19 +224,19 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO CON LOGICA DE RACHAS (3, 2, 1) ---
+// --- FINALIZAR PARTIDO Y REPARTO (LOGICA MANUAL) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
-    const id_partido = req.body.id_partido;
-    const resA = parseInt(req.body.resultado_a);
-    const resB = parseInt(req.body.resultado_b);
+    const { id_partido, resultado_a, resultado_b } = req.body;
+    const resA = parseInt(resultado_a);
+    const resB = parseInt(resultado_b);
 
     if (isNaN(resA) || isNaN(resB)) return res.redirect(`/admin?error=Resultados inválidos`);
 
     try {
+        await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resA, resB, id_partido]);
+
         const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
         const boteTotal = parseInt(resBote.rows[0].total) || 0;
-
-        await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resA, resB, id_partido]);
 
         const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
         const apuestas = resApuestas.rows;
@@ -273,29 +249,30 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         for (let ap of apuestas) {
             const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
 
-            // --- LOGICA DE RACHAS Y BONUS GARANTIZADOS ---
             let rachaData = await db.query('SELECT racha_exacta, racha_ganador FROM rachas WHERE usuario_nombre = $1', [ap.usuario]);
             if (rachaData.rows.length === 0) {
-                await db.query('INSERT INTO rachas (usuario_nombre) VALUES ($1)', [ap.usuario]);
+                await db.query('INSERT INTO rachas (usuario_nombre, racha_exacta, racha_ganador) VALUES ($1, 0, 0)', [ap.usuario]);
                 rachaData = { rows: [{ racha_exacta: 0, racha_ganador: 0 }] };
             }
-            let racha = rachaData.rows[0];
+
+            let { racha_exacta, racha_ganador } = rachaData.rows[0];
             let bonusGarantizado = 0;
 
             if (puntosFinales === 3) {
-                let nuevoNivel = racha.racha_exacta + 1;
-                if (nuevoNivel >= 2) bonusGarantizado = nuevoNivel * 100;
-                await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = racha_ganador + 1 WHERE usuario_nombre = $2', [nuevoNivel, ap.usuario]);
+                racha_exacta += 1;
+                racha_ganador += 1;
+                if (racha_exacta >= 2) bonusGarantizado = racha_exacta * 100;
             } else if (puntosFinales >= 1) {
-                let nuevoNivelG = racha.racha_ganador + 1;
-                if (nuevoNivelG >= 2) bonusGarantizado = nuevoNivelG * 50;
-                await db.query('UPDATE rachas SET racha_ganador = $1, racha_exacta = 0 WHERE usuario_nombre = $2', [nuevoNivelG, ap.usuario]);
+                racha_ganador += 1;
+                racha_exacta = 0;
+                if (racha_ganador >= 2) bonusGarantizado = racha_ganador * 50;
             } else {
-                await db.query('UPDATE rachas SET racha_exacta = 0, racha_ganador = 0 WHERE usuario_nombre = $1', [ap.usuario]);
+                racha_exacta = 0;
+                racha_ganador = 0;
             }
 
-            // Aplicar puntos y bonus garantizado (si existe)
-            await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = premio_monedas + $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
+            await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = $2 WHERE usuario_nombre = $3', [racha_exacta, racha_ganador, ap.usuario]);
+            await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
             await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntosFinales, bonusGarantizado, ap.usuario]);
 
             if (puntosFinales === 3) {
@@ -307,31 +284,20 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
             }
         }
 
-        // --- REPARTO DEL BOTE (80%) ---
         if (boteTotal > 0) {
             const boteRepartible = Math.floor(boteTotal * 0.80);
-            if (ganadoresPleno.length > 0 && ganadoresTendencia.length > 0) {
-                const bolsaPleno = boteRepartible * 0.70;
-                const bolsaTendencia = boteRepartible * 0.30;
+            if (ganadoresPleno.length > 0) {
+                const bolsaPleno = ganadoresTendencia.length > 0 ? boteRepartible * 0.70 : boteRepartible;
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
                     await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
                 }
+            }
+            if (ganadoresTendencia.length > 0) {
+                const bolsaTendencia = ganadoresPleno.length > 0 ? boteRepartible * 0.30 : boteRepartible;
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
-                    await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
-                }
-            } else if (ganadoresPleno.length > 0) {
-                for (let g of ganadoresPleno) {
-                    let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * boteRepartible);
-                    await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
-                }
-            } else if (ganadoresTendencia.length > 0) {
-                for (let t of ganadoresTendencia) {
-                    let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * boteRepartible);
                     await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
                     await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
                 }
@@ -341,7 +307,7 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         if (req.app.get('socketio')) {
             req.app.get('socketio').emit('partido_finalizado_live', { id_partido, resultado_a: resA, resultado_b: resB });
         }
-        res.redirect(`/admin?success=Reparto completado`);
+        res.redirect(`/admin?success=Partido finalizado y puntos repartidos`);
     } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -378,14 +344,13 @@ router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res)
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- RUTAS DEL CHAT CON COMPROBACIÓN DE BANEO ---
+// --- RUTAS DEL CHAT ---
 router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     const { mensaje, id_partido } = req.body;
     const usuario = req.session.userNombre;
     if (!mensaje || mensaje.trim() === "") return res.status(400).json({ error: "Vacío" });
 
     try {
-        // --- BLOQUE DE COMPROBACIÓN DE BANEO ---
         const checkBan = await db.query(
             'SELECT ban_hasta FROM usuarios WHERE nombre = $1 AND ban_hasta > NOW()',
             [usuario]
@@ -394,7 +359,6 @@ router.post('/chat/enviar', isAuthenticated, async (req, res) => {
         if (checkBan.rows.length > 0) {
             return res.status(403).json({ error: "Estás baneado del chat temporalmente." });
         }
-        // ---------------------------------------
 
         const result = await db.query(`
             INSERT INTO chat_mensajes (usuario, mensaje, id_partido, fecha)
@@ -426,30 +390,23 @@ router.post('/chat/borrar', isAuthenticated, async (req, res) => {
     } else { res.status(403).json({error: "No permitido"}); }
 });
 
-//BANEOS DE USUARIOS
 router.post('/chat/banear', isAuthenticated, async (req, res) => {
-    const miRol = req.session.userRol; // Rol del que ejecuta la acción
+    const miRol = req.session.userRol;
     const { usuario_a_banear, minutos } = req.body;
 
-    // Verificación de rango: Solo admin o moderador
     if (miRol !== 'admin' && miRol !== 'moderador') {
         return res.status(403).json({ error: "No tienes permisos de moderación." });
     }
 
     try {
-        // Obtener datos del usuario objetivo
         const target = await db.query('SELECT rol FROM usuarios WHERE nombre = $1', [usuario_a_banear]);
-
         if (target.rows.length === 0) return res.status(404).json({ error: "El usuario no existe." });
 
-        // PROTECCIÓN JERÁRQUICA: Nadie puede banear a un administrador
         if (target.rows[0].rol === 'admin') {
             return res.status(403).json({ error: "Acción bloqueada: No se puede banear a un Administrador." });
         }
 
-        const minutosFinales = parseInt(minutos) || 1440; // 24h por defecto si no se indica tiempo
-
-        // Aplicar el baneo en la base de datos
+        const minutosFinales = parseInt(minutos) || 1440;
         await db.query(`
             UPDATE usuarios
             SET ban_hasta = NOW() + ($1 || ' minutes')::interval

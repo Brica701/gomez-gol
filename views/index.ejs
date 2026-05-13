@@ -72,6 +72,7 @@
     .form-control-mobile::placeholder { color: #666; }
 
     .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
+    .btn-bet:disabled { background: #6c757d; opacity: 0.6; }
 
     #chat-container {
       position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
@@ -97,11 +98,9 @@
   <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
     <div class="d-flex align-items-center gap-2">
-      <!-- BOTÓN CHAT GENERAL RECUPERADO -->
       <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
         <i class="fas fa-globe me-1"></i> General
       </button>
-      <!-- Muestra de racha -->
       <div class="streak-badge px-2 py-1 rounded-pill">
         <i class="fas fa-fire me-1"></i> x<%= user.racha_ganador || 0 %>
       </div>
@@ -141,6 +140,9 @@
         <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %>">
           <div class="d-flex justify-content-between mb-2">
             <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
+            <% if (partido.en_vivo) { %>
+              <span class="badge bg-danger text-white blink" style="font-size: 0.6rem;">EN CURSO</span>
+            <% } %>
             <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
           </div>
           <div class="row align-items-center text-center my-2">
@@ -167,34 +169,45 @@
         <%
         let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
         pendientes.forEach(partido => {
+          const isBloqueado = partido.bloqueado === 1;
         %>
-          <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %>">
-            <div class="d-flex justify-content-between mb-2">
-              <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
-              <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
-            </div>
-            <div class="row align-items-center text-center my-2">
-              <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_a %></div>
-              <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
-              <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_b %></div>
-            </div>
+        <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleDateString() %></span>
+            <% if (isBloqueado) { %>
+              <span class="badge bg-secondary text-white" style="font-size: 0.6rem;">CERRADO</span>
+            <% } %>
+            <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
+          </div>
+          <div class="row align-items-center text-center my-2">
+            <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_a %></div>
+            <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
+            <div class="col-5 fw-bold small text-uppercase"><%= partido.equipo_b %></div>
+          </div>
 
-            <div class="text-center mb-3">
+          <div class="text-center mb-3">
               <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
                 <i class="fas fa-vault text-info me-1"></i> BOLSA TOTAL: <span class="text-info fw-bold bolsa-partido-<%= partido.id %>"><%= partido.total_apostado || 0 %> GmC</span>
               </span>
-            </div>
-
-            <form action="/apostar" method="POST" class="mt-2">
-              <input type="hidden" name="id_partido" value="<%= partido.id %>">
-              <div class="row g-1">
-                <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required></div>
-                <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required></div>
-                <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required></div>
-                <div class="col-2"><button type="submit" class="btn btn-bet w-100 py-1"><i class="fas fa-check"></i></button></div>
-              </div>
-            </form>
           </div>
+
+          <form action="/apostar" method="POST" class="mt-2">
+            <input type="hidden" name="id_partido" value="<%= partido.id %>">
+            <div class="row g-1">
+              <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isBloqueado ? 'disabled' : '' %>></div>
+              <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required <%= isBloqueado ? 'disabled' : '' %>></div>
+              <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required <%= isBloqueado ? 'disabled' : '' %>></div>
+              <div class="col-2">
+                <button type="submit" class="btn btn-bet w-100 py-1" <%= isBloqueado ? 'disabled' : '' %>>
+                  <i class="fas <%= isBloqueado ? 'fa-lock' : 'fa-check' %>"></i>
+                </button>
+              </div>
+            </div>
+            <% if (isBloqueado) { %>
+              <div class="text-center mt-2" style="font-size: 0.6rem; color: #ff6b6b !important;">Apuestas cerradas (Partido en curso o próximo)</div>
+            <% } %>
+          </form>
+        </div>
         <% }) %>
       </div>
     </div>
@@ -275,7 +288,6 @@
     div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
     div.id = `msg-${m.id}`;
 
-    // Botón de baneo (martillo) para moderadores, oculto si es mensaje propio
     const btnBan = (canMod && !isMe) ? `<span class="btn-ban badge bg-warning text-dark ms-2" onclick="banearUsuario('${m.usuario}')">🔨</span>` : '';
 
     div.innerHTML = `
@@ -350,7 +362,6 @@
   }
 
   async function banearUsuario(nombre) {
-    // Si intentas banear a un admin (prevención visual rápida)
     if(nombre.toLowerCase() === 'admin') {
       alert("No puedes banear a un administrador.");
       return;
