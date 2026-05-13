@@ -210,10 +210,12 @@
         apostados.forEach(partido => {
           const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
           const fISO = new Date(partido.fecha_partido).toISOString().split('T')[0];
+          // CORRECCIÓN HORARIA AQUÍ
+          const horaEsp = new Date(partido.fecha_partido).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false});
         %>
         <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
           <div class="d-flex justify-content-between mb-2">
-            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
             <% if (partido.en_vivo) { %>
               <span class="badge bg-danger text-white blink" style="font-size: 0.6rem;">EN CURSO</span>
             <% } %>
@@ -250,10 +252,12 @@
         pendientes.forEach(partido => {
           const isBloqueado = partido.bloqueado === 1;
           const fISO = new Date(partido.fecha_partido).toISOString().split('T')[0];
+          // CORRECCIÓN HORARIA AQUÍ
+          const horaEsp = new Date(partido.fecha_partido).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false});
         %>
         <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
           <div class="d-flex justify-content-between mb-2">
-            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= new Date(partido.fecha_partido).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
             <% if (isBloqueado) { %>
               <span class="badge bg-secondary text-white" style="font-size: 0.6rem;">CERRADO</span>
             <% } %>
