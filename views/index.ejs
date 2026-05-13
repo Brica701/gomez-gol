@@ -47,7 +47,6 @@
       font-weight: 800;
     }
 
-    /* Estilo para el botón de baneo */
     .btn-ban { cursor: pointer; display: none; font-size: 0.7rem; vertical-align: middle; }
     .msg:hover .btn-ban { display: inline-block; }
 
@@ -102,10 +101,10 @@
         <i class="fas fa-globe me-1"></i> General
       </button>
       <div class="streak-badge px-2 py-1 rounded-pill">
-        <i class="fas fa-fire me-1"></i> x<%= user.racha_ganador || 0 %>
+        <i class="fas fa-fire me-1"></i> x<span id="user-racha-top"><%= user.racha_ganador || 0 %></span>
       </div>
       <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
-        <i class="fas fa-coins text-warning me-1"></i> <%= user.creditos %>
+        <i class="fas fa-coins text-warning me-1"></i> <span id="user-creditos-top"><%= user.creditos %></span>
       </div>
       <% if (user.rol === 'admin') { %>
         <a href="/admin" class="ms-1 text-white"><i class="fas fa-user-shield fs-5"></i></a>
@@ -127,12 +126,12 @@
     <div class="col-lg-9">
       <!-- SECCIÓN: MIS APUESTAS -->
       <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
-      <div class="partidos-grid mb-5">
+      <div id="mis-apuestas-container" class="partidos-grid mb-5">
         <%
         let apostados = partidos.filter(p => apuestas_usuario.find(a => a.id_partido === p.id));
         if(apostados.length === 0) {
         %>
-          <div class="col-12 opacity-50 small ps-2">No has realizado apuestas todavía.</div>
+          <div id="no-apuestas-msg" class="col-12 opacity-50 small ps-2">No has realizado apuestas todavía.</div>
         <% } else {
         apostados.forEach(partido => {
           const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
@@ -191,7 +190,8 @@
               </span>
           </div>
 
-          <form action="/apostar" method="POST" class="mt-2">
+          <!-- FORMULARIO CORREGIDO CON CLASE AJAX -->
+          <form class="mt-2 form-apuesta-ajax">
             <input type="hidden" name="id_partido" value="<%= partido.id %>">
             <div class="row g-1">
               <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isBloqueado ? 'disabled' : '' %>></div>
@@ -218,11 +218,11 @@
       <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="small fw-bold">Aciertos Seguidos:</span>
-          <span class="badge streak-gold text-dark bg-warning px-2"><%= user.racha_ganador || 0 %></span>
+          <span class="badge streak-gold text-dark bg-warning px-2" id="racha-ganador-panel"><%= user.racha_ganador || 0 %></span>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-3">
           <span class="small fw-bold">Plenos Seguidos:</span>
-          <span class="badge bg-info text-dark px-2"><%= user.racha_exacta || 0 %></span>
+          <span class="badge bg-info text-dark px-2" id="racha-exacta-panel"><%= user.racha_exacta || 0 %></span>
         </div>
         <div class="bg-dark bg-opacity-50 rounded p-2 text-center">
           <small class="opacity-75" style="font-size: 0.65rem;">
@@ -278,6 +278,61 @@
   const userNombre = "<%= user.nombre %>";
   const userRol = "<%= user.rol %>";
   let chatActual = null;
+
+  // LÓGICA DE APUESTAS SIN RECARGA (AJAX)
+  document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = form.querySelector('button');
+      const formData = new FormData(form);
+      const data = {
+        id_partido: formData.get('id_partido'),
+        goles_a: formData.get('goles_a'),
+        goles_b: formData.get('goles_b'),
+        apostado: formData.get('apostado')
+      };
+
+      btn.disabled = true;
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+      try {
+        const res = await fetch('/apostar', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          const card = form.closest('.card');
+          card.style.transition = 'all 0.5s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.8)';
+
+          setTimeout(() => {
+            card.remove();
+            // Actualización visual opcional: podrías disparar un aviso de éxito aquí
+          }, 500);
+
+          // Actualizar saldo visualmente si lo deseas
+          const creditosEl = document.getElementById('user-creditos-top');
+          if(creditosEl) {
+            creditosEl.innerText = parseInt(creditosEl.innerText) - parseInt(data.apostado);
+          }
+        } else {
+          const errData = await res.json();
+          alert("Error: " + (errData.error || "No se pudo apostar"));
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+        }
+      } catch (e) {
+        alert("Error de conexión");
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    });
+  });
 
   function renderSingleMessage(m) {
     const container = document.getElementById('chat-messages');
