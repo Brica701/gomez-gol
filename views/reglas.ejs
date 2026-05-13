@@ -25,7 +25,7 @@
             flex-direction: column;
         }
 
-        h4, h5, h6, span, label, div, p, li { color: #ffffff !important; }
+        h4, h5, h6, span, label, div, p, li, a { color: #ffffff !important; }
 
         .navbar {
             background: rgba(0, 0, 0, 0.8) !important;
@@ -61,13 +61,6 @@
         .sub-list li { margin-bottom: 8px; font-size: 0.9rem; position: relative; padding-left: 20px; }
         .sub-list li::before { content: "•"; position: absolute; left: 0; color: var(--primary-color); font-weight: bold; }
 
-        .btn-back {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-        }
-        .btn-back:hover { background: var(--primary-color); border-color: var(--primary-color); }
-
         /* Estilos Footer Mejorados */
         .footer-glass {
             background: rgba(0, 0, 0, 0.6);
@@ -77,7 +70,6 @@
             margin-top: auto;
         }
 
-        /* Contenedor blanco para que los logos se vean bien */
         .logo-container {
             background: rgba(255, 255, 255, 0.95);
             padding: 12px;
@@ -85,8 +77,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 180px; /* Aumentado de 140px */
-            height: 85px;  /* Aumentado de 60px */
+            width: 180px;
+            height: 85px;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 6px 20px rgba(0,0,0,0.4);
             overflow: hidden;
@@ -102,7 +94,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform: scale(1.1); /* Ligero zoom para ignorar márgenes vacíos del PNG */
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -110,10 +102,8 @@
 
 <nav class="navbar navbar-dark sticky-top shadow">
     <div class="container d-flex justify-content-between align-items-center">
-        <a class="navbar-brand fw-bold" href="/">GOMEZ<span class="text-info">-GOL</span></a>
-        <a href="/" class="btn btn-back btn-sm rounded-pill px-3 text-white fw-bold">
-            <i class="fas fa-arrow-left me-1"></i> Volver
-        </a>
+        <a class="navbar-brand fw-bold" href="/"><i class="fas fa-arrow-left me-2"></i> GOMEZ<span class="text-info">-GOL</span></a>
+        <span class="small fw-bold text-uppercase opacity-75">Manual del <span class="text-info">Jugador</span></span>
     </div>
 </nav>
 
@@ -128,7 +118,6 @@
             <div class="card glass-card p-4 p-md-5 shadow-lg">
 
                 <ul class="list-unstyled">
-                    <!-- 1. SISTEMA DE PUNTOS -->
                     <li>
                         <div class="rule-number">1</div>
                         <div>
@@ -143,7 +132,6 @@
                         </div>
                     </li>
 
-                    <!-- 2. MONEDAS Y PREMIOS -->
                     <li>
                         <div class="rule-number">2</div>
                         <div>
@@ -163,7 +151,6 @@
                         </div>
                     </li>
 
-                    <!-- 3. RACHAS -->
                     <li>
                         <div class="rule-number">3</div>
                         <div>
@@ -181,7 +168,6 @@
                         </div>
                     </li>
 
-                    <!-- 4. REGLAS DE ORO -->
                     <li>
                         <div class="rule-number">4</div>
                         <div>
@@ -208,21 +194,18 @@
 <footer class="footer-glass">
     <div class="container">
         <div class="row align-items-center justify-content-center g-4">
-            <!-- Logo Cuadrotek -->
             <div class="col-auto">
                 <div class="logo-container">
                     <img src="/images/cuadrotek.png" alt="CuadroTek" class="footer-logo">
                 </div>
             </div>
 
-            <!-- Logo Gomez Moreno -->
             <div class="col-auto">
                 <div class="logo-container">
                     <img src="/images/gomez_moreno_logo (1)-nobg.svg" alt="Gomez Moreno" class="footer-logo">
                 </div>
             </div>
 
-            <!-- Logo Mercasat -->
             <div class="col-auto">
                 <div class="logo-container">
                     <img src="/images/mercasat.png" alt="Mercasat" class="footer-logo">
