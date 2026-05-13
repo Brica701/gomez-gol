@@ -209,9 +209,16 @@
         <% } else {
         apostados.forEach(partido => {
           const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
-          const fISO = new Date(partido.fecha_partido).toISOString().split('T')[0];
-          // CORRECCIÓN HORARIA AQUÍ
-          const horaEsp = new Date(partido.fecha_partido).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false});
+
+          // MEJORA RENDER: Parseo robusto y TimeZone España
+          let fISO = "";
+          let horaEsp = "00:00";
+          try {
+            let d = new Date(partido.fecha_partido);
+            if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
+            fISO = d.toISOString().split('T')[0];
+            horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
+          } catch(e) { console.error("Error fecha apuesta:", e); }
         %>
         <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
           <div class="d-flex justify-content-between mb-2">
@@ -251,9 +258,16 @@
         let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
         pendientes.forEach(partido => {
           const isBloqueado = partido.bloqueado === 1;
-          const fISO = new Date(partido.fecha_partido).toISOString().split('T')[0];
-          // CORRECCIÓN HORARIA AQUÍ
-          const horaEsp = new Date(partido.fecha_partido).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false});
+
+          // MEJORA RENDER: Parseo robusto y TimeZone España
+          let fISO = "";
+          let horaEsp = "00:00";
+          try {
+            let d = new Date(partido.fecha_partido);
+            if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
+            fISO = d.toISOString().split('T')[0];
+            horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
+          } catch(e) { console.error("Error fecha disponible:", e); }
         %>
         <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
           <div class="d-flex justify-content-between mb-2">

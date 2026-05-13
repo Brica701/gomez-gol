@@ -115,6 +115,7 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
 });
 
 // --- PANEL PRINCIPAL ---
+// --- PANEL PRINCIPAL ---
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
@@ -132,11 +133,12 @@ router.get('/', isAuthenticated, async (req, res) => {
 
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
 
+        // Mejora de tiempo usando CURRENT_TIMESTAMP para el servidor (Render)
         const partidosRes = await db.query(`
             SELECT p.*,
                    (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
                    CASE
-                       WHEN estado = 'en_vivo' OR (EXTRACT(EPOCH FROM (fecha_partido - NOW())) / 60) <= 10 THEN 1
+                       WHEN estado = 'en_vivo' OR (EXTRACT(EPOCH FROM (fecha_partido - CURRENT_TIMESTAMP)) / 60) <= 10 THEN 1
                        ELSE 0
                        END as bloqueado,
                    CASE
@@ -147,6 +149,14 @@ router.get('/', isAuthenticated, async (req, res) => {
             WHERE estado != 'finalizado'
             ORDER BY fecha_partido ASC
         `);
+
+        // Procesamos los partidos para asegurar que la fecha sea estable
+        const partidosProcesados = partidosRes.rows.map(p => {
+            return {
+                ...p,
+                fecha_partido: p.fecha_partido
+            };
+        });
 
         const rankingRes = await db.query('SELECT nombre, puntos, creditos FROM usuarios ORDER BY puntos DESC, creditos DESC, nombre ASC');
 
@@ -164,16 +174,16 @@ router.get('/', isAuthenticated, async (req, res) => {
         `, [usuarioLogueado]);
 
         res.render('index', {
-            partidos: partidosRes.rows,
+            partidos: partidosProcesados,
             ranking: rankingRes.rows,
             apuestas_usuario: apuestasRes.rows,
             user: userData[0],
             historialPuntos: JSON.stringify(historialRes.rows),
-            error: req.query.error, success: req.query.success
+            error: req.query.error,
+            success: req.query.success
         });
     } catch (err) { res.status(500).send(err.message); }
 });
-
 // --- REGISTRO DE APUESTAS (Mejorado para AJAX) ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
