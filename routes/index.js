@@ -12,6 +12,14 @@ function isAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
+// Nuevo Middleware para acciones de moderación (Admin + Moderadores)
+function isModerator(req, res, next) {
+    if (req.session && (req.session.userRol === 'admin' || req.session.userRol === 'moderador')) {
+        return next();
+    }
+    res.status(403).json({ error: "No tienes permisos de moderación" });
+}
+
 function isAdmin(req, res, next) {
     if (req.session && req.session.userRol === 'admin') return next();
     res.redirect('/?error=' + encodeURIComponent("No tienes permisos de administrador"));
@@ -115,7 +123,6 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
 });
 
 // --- PANEL PRINCIPAL ---
-// --- PANEL PRINCIPAL ---
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
@@ -133,7 +140,6 @@ router.get('/', isAuthenticated, async (req, res) => {
 
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
 
-        // Mejora de tiempo usando CURRENT_TIMESTAMP para el servidor (Render)
         const partidosRes = await db.query(`
             SELECT p.*,
                    (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
@@ -150,12 +156,8 @@ router.get('/', isAuthenticated, async (req, res) => {
             ORDER BY fecha_partido ASC
         `);
 
-        // Procesamos los partidos para asegurar que la fecha sea estable
         const partidosProcesados = partidosRes.rows.map(p => {
-            return {
-                ...p,
-                fecha_partido: p.fecha_partido
-            };
+            return { ...p, fecha_partido: p.fecha_partido };
         });
 
         const rankingRes = await db.query('SELECT nombre, puntos, creditos FROM usuarios ORDER BY puntos DESC, creditos DESC, nombre ASC');
@@ -184,13 +186,13 @@ router.get('/', isAuthenticated, async (req, res) => {
         });
     } catch (err) { res.status(500).send(err.message); }
 });
+
 // --- REGISTRO DE APUESTAS (Mejorado para AJAX) ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
     const cantidadApostada = parseInt(apostado);
 
-    // Función auxiliar para responder según el tipo de petición
     const responderError = (msj) => {
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.status(400).json({ error: msj });
@@ -402,7 +404,7 @@ router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res)
     } catch (err) { res.status(500).send(err.message); }
 });
 
-// --- RUTAS DEL CHAT ---
+// --- RUTAS DEL CHAT (CORREGIDAS) ---
 router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     const { mensaje, id_partido } = req.body;
     const usuario = req.session.userNombre;
@@ -429,35 +431,49 @@ router.post('/chat/enviar', isAuthenticated, async (req, res) => {
 });
 
 router.get('/chat/:id_partido?', isAuthenticated, async (req, res) => {
-    const id_partido = req.params.id_partido || null;
-    try {
-        const mensajes = await db.query(`
-            SELECT m.*, u.rol FROM chat_mensajes m JOIN usuarios u ON m.usuario = u.nombre
-            WHERE m.id_partido ${id_partido ? '= $1' : 'IS NULL'}
-            ORDER BY m.fecha DESC LIMIT 50
-        `, id_partido ? [id_partido] : []);
-        res.json(mensajes.rows.reverse());
-    } catch (err) { res.status(500).json({error: err.message}); }
-});
+    let id_partido = req.params.id_partido;
 
-router.post('/chat/borrar', isAuthenticated, async (req, res) => {
-    if (req.session.userRol === 'admin' || req.session.userRol === 'moderador') {
-        await db.query('DELETE FROM chat_mensajes WHERE id = $1', [req.body.id_mensaje]);
-        if (req.app.get('socketio')) req.app.get('socketio').emit('mensaje_borrado', req.body.id_mensaje);
-        res.json({success: true});
-    } else { res.status(403).json({error: "No permitido"}); }
-});
-
-router.post('/chat/banear', isAuthenticated, async (req, res) => {
-    const miRol = req.session.userRol;
-    const { usuario_a_banear, minutos } = req.body;
-
-    if (miRol !== 'admin' && miRol !== 'moderador') {
-        return res.status(403).json({ error: "No tienes permisos de moderación." });
+    // Si el parámetro es 'general' o no existe, lo tratamos como NULL
+    if (!id_partido || id_partido === 'general' || id_partido === 'null') {
+        id_partido = null;
     }
 
     try {
-        const target = await db.query('SELECT rol FROM usuarios WHERE nombre = $1', [usuario_a_banear]);
+        const mensajes = await db.query(`
+            SELECT m.*, u.rol 
+            FROM chat_mensajes m 
+            LEFT JOIN usuarios u ON m.usuario = u.nombre
+            WHERE ${id_partido ? 'm.id_partido = $1' : 'm.id_partido IS NULL'}
+            ORDER BY m.fecha DESC LIMIT 50
+        `, id_partido ? [id_partido] : []);
+
+        // .reverse() es necesario porque pedimos los últimos 50 (DESC)
+        // pero queremos que el primero sea el más viejo al pintar
+        res.json(mensajes.rows.reverse());
+    } catch (err) {
+        console.error("Error en chat:", err);
+        res.status(500).json({error: err.message});
+    }
+});
+
+router.post('/chat/borrar', isAuthenticated, isModerator, async (req, res) => {
+    try {
+        await db.query('DELETE FROM chat_mensajes WHERE id = $1', [req.body.id_mensaje]);
+        if (req.app.get('socketio')) {
+            // Sincronización con el evento esperado por el frontend
+            req.app.get('socketio').emit('mensaje_eliminado_en_vivo', req.body.id_mensaje);
+        }
+        res.json({success: true});
+    } catch (err) {
+        res.status(500).json({error: err.message});
+    }
+});
+
+router.post('/admin/banear-usuario', isAuthenticated, isModerator, async (req, res) => {
+    const { nombre, minutos } = req.body;
+
+    try {
+        const target = await db.query('SELECT rol FROM usuarios WHERE nombre = $1', [nombre]);
         if (target.rows.length === 0) return res.status(404).json({ error: "El usuario no existe." });
 
         if (target.rows[0].rol === 'admin') {
@@ -469,14 +485,15 @@ router.post('/chat/banear', isAuthenticated, async (req, res) => {
             UPDATE usuarios
             SET ban_hasta = NOW() + ($1 || ' minutes')::interval
             WHERE nombre = $2
-        `, [minutosFinales, usuario_a_banear]);
+        `, [minutosFinales, nombre]);
 
         res.json({
             success: true,
-            mensaje: `Usuario ${usuario_a_banear} baneado por ${minutosFinales} minutos.`
+            mensaje: `Usuario ${nombre} baneado por ${minutosFinales} minutos.`
         });
 
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: "Error interno del servidor." });
     }
 });

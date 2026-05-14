@@ -73,8 +73,23 @@
       font-weight: 800;
     }
 
-    .btn-ban { cursor: pointer; display: none; font-size: 0.7rem; vertical-align: middle; }
-    .msg:hover .btn-ban { display: inline-block; }
+    /* BOTONES DE MODERACIÓN VISIBLES EN MÓVIL */
+    .btn-mod-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      margin-left: 5px;
+      border: none;
+      color: white !important;
+      cursor: pointer;
+      opacity: 0.9;
+    }
+    .btn-mod-del { background: #dc3545; }
+    .btn-mod-ban { background: #343a40; }
 
     .partidos-grid {
       display: grid;
@@ -109,10 +124,7 @@
     .msg-others { align-self: flex-start; background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
     .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px; }
     .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8; color: #38bdf8 !important; }
-    .btn-del { position: absolute; top: -5px; right: -5px; cursor: pointer; display: none; }
-    .msg:hover .btn-del { display: block; }
 
-    /* ESTILOS FOOTER MAXIMIZADOS */
     .footer-glass {
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(15px);
@@ -148,6 +160,20 @@
       transform: scale(1.1);
     }
 
+    /* NUEVO: PUNTO ROJO DE NOTIFICACIÓN */
+    .notification-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+      background-color: #ff3b30;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      display: none;
+      z-index: 1002;
+    }
+
     @media (max-width: 576px) {
       #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
       .logo-container { width: 140px; height: 70px; }
@@ -156,31 +182,25 @@
 </head>
 <body>
 
-<!-- NAV BAR ACTUALIZADA -->
 <nav class="navbar navbar-dark sticky-top shadow">
-  <div class="container">
-    <!-- Fila Superior: Logo y Admin -->
-    <div class="d-flex justify-content-between align-items-center w-100 mb-2 mb-sm-0">
-      <a class="navbar-brand fw-bold m-0" href="#">GOMEZ<span class="text-info">-GOL</span></a>
-      <% if (user.rol === 'admin') { %>
-        <a href="/admin" class="text-white ms-auto"><i class="fas fa-user-shield fs-5"></i></a>
-      <% } %>
-    </div>
-
-    <!-- Fila Inferior (o lateral en PC): Acciones y Stats -->
-    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center justify-content-sm-end w-100 w-sm-auto">
-      <a href="/reglas" class="btn btn-outline-warning rounded-pill px-2 px-sm-3 btn-sm fw-bold">
-        <i class="fas fa-book me-1"></i> <span class="d-sm-inline">Reglas</span>
+  <div class="container d-flex justify-content-between align-items-center">
+    <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
+    <div class="d-flex align-items-center gap-2">
+      <a href="/reglas" class="btn btn-outline-warning rounded-pill px-3 btn-sm fw-bold">
+        <i class="fas fa-book me-1"></i> Reglas
       </a>
-      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-2 px-sm-3 btn-sm">
-        <i class="fas fa-globe me-1"></i> <span class="d-sm-inline">General</span>
+      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
+        <i class="fas fa-globe me-1"></i> General
       </button>
-      <div class="streak-badge px-2 py-1 rounded-pill d-flex align-items-center">
+      <div class="streak-badge px-2 py-1 rounded-pill">
         <i class="fas fa-fire me-1"></i> x<span id="user-racha-top"><%= user.racha_ganador || 0 %></span>
       </div>
-      <div class="badge-coins border border-success px-2 px-sm-3 py-1 rounded-pill bg-dark bg-opacity-50 d-flex align-items-center">
+      <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
         <i class="fas fa-coins text-warning me-1"></i> <span id="user-creditos-top"><%= user.creditos %></span>
       </div>
+      <% if (user.rol === 'admin' || user.rol === 'moderador') { %>
+        <a href="/admin" class="ms-1 text-white"><i class="fas fa-user-shield fs-5"></i></a>
+      <% } %>
     </div>
   </div>
 </nav>
@@ -216,7 +236,6 @@
         apostados.forEach(partido => {
           const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
 
-          // MEJORA RENDER: Parseo robusto y TimeZone España
           let fISO = "";
           let horaEsp = "00:00";
           try {
@@ -265,7 +284,6 @@
         pendientes.forEach(partido => {
           const isBloqueado = partido.bloqueado === 1;
 
-          // MEJORA RENDER: Parseo robusto y TimeZone España
           let fISO = "";
           let horaEsp = "00:00";
           try {
@@ -394,8 +412,10 @@
   </div>
 </div>
 
+<!-- BOTÓN FLOTANTE CON NOTIFICACIÓN -->
 <button onclick="toggleChat()" class="btn btn-success shadow-lg rounded-circle" style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1001;">
   <i class="fas fa-comments fs-4"></i>
+  <span id="chat-notification" class="notification-badge"></span>
 </button>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -405,10 +425,40 @@
   const userRol = "<%= user.rol %>";
   let chatActual = null;
 
+  // 1. CARGA INICIAL
+  window.onload = () => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const datePicker = document.getElementById('main-date-picker');
+    if(datePicker) {
+      datePicker.value = hoy;
+      filterMatchesByDate(hoy);
+    }
+    // Cargamos mensajes del general en silencio al inicio
+    cargarMensajes();
+  };
+
+  // --- FUNCIÓN CORREGIDA PARA ABRIR DEL TIRÓN ---
+  function setChat(id, titulo) {
+    chatActual = id;
+    const chatTitle = document.getElementById('chat-title');
+    const chatContainer = document.getElementById('chat-container');
+    const notif = document.getElementById('chat-notification');
+
+    if(chatTitle) chatTitle.innerText = titulo;
+
+    if(chatContainer) {
+      chatContainer.style.display = 'flex';
+    }
+
+    // Al abrir una sala específica, limpiamos la notificación
+    if(notif) notif.style.display = 'none';
+
+    cargarMensajes();
+  }
+
   function filterMatchesByDate(selectedDate) {
     const items = document.querySelectorAll('.match-item');
     let countVisible = 0;
-
     items.forEach(item => {
       if (item.getAttribute('data-date') === selectedDate) {
         item.classList.remove('partido-hidden');
@@ -417,7 +467,6 @@
         item.classList.add('partido-hidden');
       }
     });
-
     const noMsg = document.getElementById('no-apuestas-msg');
     if (noMsg) {
       noMsg.style.display = countVisible === 0 ? 'block' : 'none';
@@ -433,12 +482,7 @@
     filterMatchesByDate(iso);
   }
 
-  window.onload = () => {
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('main-date-picker').value = hoy;
-    filterMatchesByDate(hoy);
-  };
-
+  // Lógica de apuestas (sin cambios)
   document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -450,58 +494,16 @@
         goles_b: formData.get('goles_b'),
         apostado: formData.get('apostado')
       };
-
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
       try {
         const res = await fetch('/apostar', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(data)
         });
-
         if (res.ok) {
-          const card = form.closest('.card');
-          const misApuestasContainer = document.getElementById('mis-apuestas-container');
-          const noApuestasMsg = document.getElementById('no-apuestas-msg');
-          if (noApuestasMsg) noApuestasMsg.style.display = 'none';
-
-          const nuevaCard = card.cloneNode(true);
-          nuevaCard.classList.add('border-success');
-          nuevaCard.querySelector('form').remove();
-
-          const divApuesta = document.createElement('div');
-          divApuesta.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success mt-2';
-          divApuesta.innerHTML = `
-            <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: ${data.goles_a} - ${data.goles_b}</span>
-            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(${data.apostado} GmC)</div>
-          `;
-          nuevaCard.appendChild(divApuesta);
-
-          card.style.transition = 'all 0.4s ease';
-          card.style.opacity = '0';
-          card.style.transform = 'scale(0.8)';
-
-          setTimeout(() => {
-            card.remove();
-            nuevaCard.style.opacity = '0';
-            nuevaCard.style.transform = 'translateY(-20px)';
-            misApuestasContainer.prepend(nuevaCard);
-
-            setTimeout(() => {
-              nuevaCard.style.transition = 'all 0.4s ease';
-              nuevaCard.style.opacity = '1';
-              nuevaCard.style.transform = 'translateY(0)';
-            }, 50);
-          }, 400);
-
-          const creditosEl = document.getElementById('user-creditos-top');
-          if(creditosEl) {
-            const saldoActual = parseInt(creditosEl.innerText);
-            creditosEl.innerText = saldoActual - parseInt(data.apostado);
-          }
-
+          location.reload();
         } else {
           const errData = await res.json();
           alert(errData.error || "Error al apostar");
@@ -511,63 +513,139 @@
       } catch (e) {
         console.error(e);
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
       }
     });
   });
 
+  // MODERACIÓN Y CHAT
   function renderSingleMessage(m) {
     const container = document.getElementById('chat-messages');
     if (!container) return;
     const isMe = m.usuario === userNombre;
+    const isModerator = (userRol === 'admin' || userRol === 'moderador');
+
     const div = document.createElement('div');
     div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
     div.id = `msg-${m.id}`;
-    div.innerHTML = `<span class="msg-user">${m.usuario}</span><div>${m.mensaje}</div>`;
+
+    let html = `<span class="msg-user">${m.usuario}</span><div>${m.mensaje}</div>`;
+
+    if (isModerator) {
+      html += `
+        <div class="mt-1 d-flex">
+          <button onclick="eliminarMensajeLive('${m.id}')" class="btn-mod-action btn-mod-del" title="Eliminar"><i class="fas fa-trash"></i></button>
+          ${!isMe ? `<button onclick="banearUsuarioLive('${m.usuario}')" class="btn-mod-action btn-mod-ban" title="Banear"><i class="fas fa-user-slash"></i></button>` : ''}
+        </div>`;
+    }
+
+    div.innerHTML = html;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
   }
 
-  function setChat(id, titulo) {
-    chatActual = id;
-    document.getElementById('chat-title').innerText = titulo;
-    document.getElementById('chat-container').style.display = 'flex';
-    cargarMensajes();
+  async function eliminarMensajeLive(id) {
+    if(!confirm("¿Deseas eliminar este mensaje?")) return;
+    await fetch('/chat/borrar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id_mensaje: id })
+    });
+  }
+
+  async function banearUsuarioLive(nombre) {
+    const mins = prompt(`¿Cuántos minutos deseas banear a ${nombre}?`, "1440");
+    if(!mins) return;
+    try {
+      const res = await fetch('/admin/banear-usuario', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ nombre: nombre, minutos: parseInt(mins) })
+      });
+      const data = await res.json();
+      alert(data.mensaje || data.error);
+    } catch(e) { alert("Error en la petición de baneo"); }
   }
 
   async function cargarMensajes() {
     const container = document.getElementById('chat-messages');
-    container.innerHTML = '';
-    const res = await fetch(`/chat/${chatActual || ''}`);
-    const mensajes = await res.json();
-    mensajes.forEach(renderSingleMessage);
+    if(!container) return;
+    container.innerHTML = '<div class="text-center opacity-50 small mt-2">Cargando historial...</div>';
+
+    try {
+      const res = await fetch(`/chat/${chatActual || ''}`);
+      const mensajes = await res.json();
+      container.innerHTML = '';
+      if(mensajes.length === 0) {
+        container.innerHTML = '<div class="text-center opacity-50 small mt-2">No hay mensajes.</div>';
+      }
+      mensajes.forEach(renderSingleMessage);
+    } catch (e) {
+      container.innerHTML = '<div class="text-center text-danger small mt-2">Error al cargar mensajes.</div>';
+    }
   }
 
   function toggleChat() {
     const chat = document.getElementById('chat-container');
-    chat.style.display = (chat.style.display === 'none' || !chat.style.display) ? 'flex' : 'none';
+    const notif = document.getElementById('chat-notification');
+    if(!chat) return;
+    const isHidden = chat.style.display === 'none' || !chat.style.display;
+    chat.style.display = isHidden ? 'flex' : 'none';
+
+    if(isHidden) {
+      cargarMensajes();
+      // Ocultar notificación al abrir manualmente
+      if(notif) notif.style.display = 'none';
+    }
   }
 
   async function enviarMensaje() {
     const input = document.getElementById('chat-input');
     const texto = input.value.trim();
     if(!texto) return;
-    const res = await fetch('/chat/enviar', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ mensaje: texto, id_partido: chatActual })
-    });
-    if(res.ok) input.value = '';
+
+    try {
+      const res = await fetch('/chat/enviar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ mensaje: texto, id_partido: chatActual })
+      });
+      if(res.ok) {
+        input.value = '';
+      } else {
+        const err = await res.json();
+        alert(err.error || "No se pudo enviar");
+      }
+    } catch (e) { alert("Error de conexión"); }
   }
 
+  // SOCKETS
   socket.on('nuevo_mensaje', (m) => {
-    if (String(m.id_partido) === String(chatActual)) renderSingleMessage(m);
+    const chatContainer = document.getElementById('chat-container');
+    const notif = document.getElementById('chat-notification');
+    const isOpen = chatContainer && chatContainer.style.display === 'flex';
+
+    // 1. Mostrar en pantalla si es la sala correcta
+    if (String(m.id_partido) === String(chatActual) || (m.id_partido === null && chatActual === null)) {
+      renderSingleMessage(m);
+    }
+
+    // 2. Lógica de punto rojo:
+    // Mostrar si el chat está CERRADO o si el mensaje es de una sala distinta a la actual
+    if (!isOpen || String(m.id_partido) !== String(chatActual)) {
+      if(notif) notif.style.display = 'block';
+    }
+  });
+
+  socket.on('mensaje_eliminado_en_vivo', (id) => {
+    const el = document.getElementById(`msg-${id}`);
+    if(el) el.remove();
   });
 
   socket.on('actualizar_bolsa_live', (data) => {
     const el = document.querySelector(`.bolsa-partido-${data.id_partido}`);
     if(el) el.innerText = `${data.nuevo_total} GmC`;
   });
+
 </script>
 </body>
 </html>
