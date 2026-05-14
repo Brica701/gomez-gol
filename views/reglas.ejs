@@ -13,6 +13,7 @@
             --glass-bg: rgba(255, 255, 255, 0.08);
             --glass-border: rgba(255, 255, 255, 0.15);
             --streak-gold: #ffc107;
+            --danger-soft: rgba(220, 53, 69, 0.2);
         }
 
         body {
@@ -51,6 +52,15 @@
         .highlight-gold { color: var(--streak-gold) !important; font-weight: bold; }
         .highlight-success { color: var(--primary-color) !important; font-weight: bold; }
 
+        .sancion {
+            background: var(--danger-soft);
+            border-left: 3px solid #dc3545;
+            padding: 5px 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
         .list-unstyled > li {
             margin-bottom: 2.5rem;
             display: flex; gap: 15px;
@@ -58,10 +68,9 @@
         }
 
         .sub-list { list-style: none; padding-left: 0; margin-top: 10px; }
-        .sub-list li { margin-bottom: 8px; font-size: 0.9rem; position: relative; padding-left: 20px; }
+        .sub-list li { margin-bottom: 12px; font-size: 0.9rem; position: relative; padding-left: 20px; }
         .sub-list li::before { content: "•"; position: absolute; left: 0; color: var(--primary-color); font-weight: bold; }
 
-        /* Estilos Footer Mejorados */
         .footer-glass {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(15px);
@@ -110,71 +119,104 @@
 <div class="container mt-4 mb-5">
     <div class="text-center mb-5">
         <h2 class="fw-bold text-uppercase"><i class="fas fa-scroll text-success me-2"></i>Manual del Jugador</h2>
-        <p class="opacity-75">Todo lo que necesitas saber para dominar el Ranking</p>
+        <p class="opacity-75">Reglamento oficial y convivencia del equipo</p>
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-lg-9">
+        <div class="col-lg-10">
             <div class="card glass-card p-4 p-md-5 shadow-lg">
 
+                <!-- INTRODUCCIÓN CÓDIGO DE CONDUCTA -->
+                <div class="mb-5 p-4 rounded-4" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.2);">
+                    <h5 class="fw-bold text-success"><i class="fas fa-heart me-2"></i>OBJETIVO FUNDAMENTAL</h5>
+                    <p class="m-0 opacity-90 italic">El objetivo fundamental de esta porra es impulsar nuestro compromiso y conexión como equipo. Queremos que este espacio sirva para conocernos mejor, divertirnos y generar una cultura de empresa vibrante y unida. ¡Tu participación y tus comentarios son lo que hace grande este juego!</p>
+                </div>
+
                 <ul class="list-unstyled">
+                    <!-- 1. CÓDIGO DE CONDUCTA -->
                     <li>
                         <div class="rule-number">1</div>
                         <div>
-                            <h5 class="fw-bold text-success text-uppercase">Sistema de Puntos (El Ranking)</h5>
-                            <p class="small opacity-80">Los puntos determinan quién manda en el Ranking Global. En cada partido puedes obtener:</p>
+                            <h5 class="fw-bold text-success text-uppercase">Código de Conducta y Comunidad</h5>
                             <ul class="sub-list">
-                                <li><span class="highlight-success">3 Puntos (Pleno):</span> Si aciertas el resultado exacto (ej. apostaste 2-1 y quedaron 2-1).</li>
-                                <li><span class="highlight-success">2 Puntos (Tendencia):</span> Si aciertas quién gana o si hay empate, pero no el número de goles (ej. apostaste 3-0 y quedaron 1-0).</li>
-                                <li><span class="highlight-success">1 Punto (Empate Genérico):</span> Si apostaste por un empate (ej. 1-1) y el partido terminó en empate, pero con otros goles (ej. 2-2).</li>
-                                <li><span class="text-danger fw-bold">0 Puntos:</span> Si no acertaste ni el ganador ni el empate.</li>
+                                <li>
+                                    <strong>Comunicación y Respeto:</strong> Rivales, no enemigos. Se fomenta el "pique" sano, las predicciones arriesgadas y las bromas amistosas.
+                                    <div class="sancion"><b class="text-danger">Sanción:</b> Insultos o ataques personales suponen el baneo y eliminación de la apuesta actual y la siguiente.</div>
+                                </li>
+                                <li>
+                                    <strong>El Chat Web es nuestro "Estadio":</strong> Centralizamos el debate en el chat de la web. <strong>Slack queda reservado estrictamente para comunicación laboral.</strong>
+                                </li>
+                                <li>
+                                    <strong>Cero discriminaciones:</strong> No se tolerarán comentarios despectivos por raza, religión o procedencia.
+                                    <div class="sancion"><b class="text-danger">Sanción:</b> Cualquier falta de respeto en este sentido supondrá baneo inmediato y pérdida de puntos.</div>
+                                </li>
+                                <li>
+                                    <strong>Colaboración:</strong> Ayuda a los compañeros con dificultades técnicas. Queremos que la competición sea justa para todos.
+                                </li>
+                                <li>
+                                    <strong>Espíritu de Empresa:</strong> Disfrutemos del Mundial con responsabilidad, sin perder de vista nuestras metas laborales.
+                                </li>
+                                <li>
+                                    <strong>Inclusión Total:</strong> Aquí no hay niveles. Ya seas experto o novato, tu voz y tus predicciones cuentan igual.
+                                </li>
                             </ul>
                         </div>
                     </li>
 
+                    <!-- 2. SISTEMA DE PUNTOS -->
                     <li>
                         <div class="rule-number">2</div>
                         <div>
-                            <h5 class="fw-bold text-success text-uppercase">Sistema de Monedas (GmCoins) y Premios</h5>
-                            <p class="small opacity-80">Las monedas son el motor de tus apuestas:</p>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Puntos (El Ranking)</h5>
+                            <p class="small opacity-80">Puntuación por partido:</p>
                             <ul class="sub-list">
-                                <li><span class="highlight-gold">La Apuesta:</span> El mínimo para entrar en un partido son 50 GmCoins.</li>
-                                <li><span class="highlight-gold">El Bote (Pool):</span> El 80% de lo apostado se reparte entre los ganadores:
-                                    <div class="ps-3 mt-2">
-                                        <small class="d-block">• <strong>70% del Bote</strong> para los que hicieron Pleno (3 puntos).</small>
-                                        <small class="d-block">• <strong>30% del Bote</strong> para los que acertaron Tendencia (1 o 2 puntos).</small>
-                                        <small class="d-block opacity-75 mt-1"><em>Si solo hay ganadores de un tipo, ¡se llevan el 100% del bote repartible!</em></small>
-                                    </div>
-                                </li>
-                                <li><span class="highlight-gold">Reparto Proporcional:</span> Cuanto más apuestes tú en comparación con los demás ganadores, mayor será tu parte del premio.</li>
+                                <li><span class="highlight-success">3 Puntos (Pleno):</span> Acierto de resultado exacto (ej. 2-1).</li>
+                                <li><span class="highlight-success">2 Puntos (Tendencia):</span> Acierto de ganador o empate, pero no goles exactos.</li>
+                                <li><span class="highlight-success">1 Punto (Empate Genérico):</span> Apostaste empate y hubo empate con otros goles.</li>
+                                <li><span class="text-danger fw-bold">0 Puntos:</span> No acertaste ganador ni empate.</li>
                             </ul>
                         </div>
                     </li>
 
+                    <!-- 3. MONEDAS Y PREMIOS -->
                     <li>
                         <div class="rule-number">3</div>
                         <div>
-                            <h5 class="fw-bold text-success text-uppercase">Sistema de Rachas (Bonus Extra)</h5>
-                            <p class="small opacity-80">Premiamos la regularidad con monedas garantizadas (independientes del bote):</p>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Monedas (GmCoins) y Premios</h5>
                             <ul class="sub-list">
-                                <li><span class="highlight-gold">Racha de Ganador:</span> Si aciertas tendencia en 2 o más partidos seguidos: <br>
-                                    <span class="text-info small fw-bold">Bonus: (Nº de racha) x 50 GmCoins.</span>
+                                <li><span class="highlight-gold">La Apuesta:</span> Mínimo 50 GmCoins por partido.</li>
+                                <li><span class="highlight-gold">El Bote (Pool):</span> Se reparte el 80% de lo apostado:
+                                    <div class="ps-3 mt-2">
+                                        <small class="d-block">• <strong>70% del Bote</strong> para aciertos de Pleno (3 puntos).</small>
+                                        <small class="d-block">• <strong>30% del Bote</strong> para aciertos de Tendencia (1 o 2 puntos).</small>
+                                    </div>
                                 </li>
-                                <li><span class="highlight-gold">Racha Exacta (Plenos):</span> Si aciertas el resultado exacto en 2 o más partidos seguidos: <br>
-                                    <span class="text-info small fw-bold">Bonus: (Nº de racha) x 100 GmCoins.</span>
-                                </li>
-                                <li><span class="text-danger fw-bold">¡Cuidado!:</span> Si fallas un partido totalmente (0 puntos), tus rachas volverán a cero.</li>
+                                <li><span class="highlight-gold">Reparto Proporcional:</span> Tu parte del premio crece según el tamaño de tu apuesta individual.</li>
                             </ul>
                         </div>
                     </li>
 
+                    <!-- 4. RACHAS -->
                     <li>
                         <div class="rule-number">4</div>
                         <div>
+                            <h5 class="fw-bold text-success text-uppercase">Sistema de Rachas (Bonus Extra)</h5>
+                            <ul class="sub-list">
+                                <li><span class="highlight-gold">Racha de Ganador:</span> (Nº de racha) x 50 GmCoins tras 2 aciertos seguidos.</li>
+                                <li><span class="highlight-gold">Racha Exacta (Plenos):</span> (Nº de racha) x 100 GmCoins tras 2 resultados exactos seguidos.</li>
+                                <li><span class="text-danger fw-bold">¡Cuidado!:</span> Un resultado de 0 puntos reinicia todas tus rachas a cero.</li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- 5. REGLAS DE ORO -->
+                    <li>
+                        <div class="rule-number">5</div>
+                        <div>
                             <h5 class="fw-bold text-success text-uppercase">Reglas de Oro</h5>
                             <ul class="sub-list">
-                                <li><span class="fw-bold">Cierre de Apuestas:</span> Se bloquean automáticamente 10 minutos antes del inicio o si el admin lo pone "En Vivo".</li>
-                                <li><span class="fw-bold">Fair Play:</span> El chat es para disfrutar. Los admins banean a quien no respete las normas.</li>
+                                <li><span class="fw-bold">Cierre de Apuestas:</span> Bloqueo automático 10 minutos antes del inicio o cuando el admin lo decida.</li>
+                                <li><span class="fw-bold">Feedback:</span> Tus ideas nos ayudan a mejorar. Si algo puede ser más épico, dínoslo con amabilidad.</li>
                             </ul>
                         </div>
                     </li>
