@@ -16,26 +16,30 @@
             --danger: #ef4444;
         }
 
-        body { background: var(--bg-deep); color: #ffffff !important; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-deep); color: #ffffff !important; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         h1, h2, h3, h4, h5, h6, p, span, label, td, th, strong, small, div { color: #ffffff !important; }
 
+        /* AJUSTES RESPONSIVE CARDS */
         .stat-card {
             background: var(--card-bg);
             border-left: 4px solid var(--accent);
             border-radius: 10px;
-            padding: 1.5rem;
+            padding: 1rem;
+            height: 100%;
             transition: transform 0.2s;
         }
+        @media (min-width: 768px) { .stat-card { padding: 1.5rem; } }
 
         .text-warning-bold { color: #fbbf24 !important; font-weight: bold; }
         .text-success-bold { color: #4ade80 !important; font-weight: bold; }
         .text-info-bold { color: #7dd3fc !important; font-weight: bold; }
         .text-muted-white { color: #cbd5e1 !important; opacity: 0.8; }
 
-        .nav-tabs { border-bottom: 2px solid #334155; }
+        /* TABS RESPONSIVE */
+        .nav-tabs { border-bottom: 2px solid #334155; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
         .nav-tabs .nav-link {
-            color: #ffffff !important; border: none; padding: 1rem 1.5rem;
-            font-weight: 600; opacity: 0.6;
+            color: #ffffff !important; border: none; padding: 0.8rem 1rem;
+            font-weight: 600; opacity: 0.6; white-space: nowrap;
         }
         .nav-tabs .nav-link.active {
             background: transparent; color: var(--accent) !important;
@@ -46,13 +50,13 @@
             background: var(--card-bg);
             border: 1px solid #334155;
             border-radius: 15px;
-            overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .table { color: #ffffff !important; }
-        .table thead th { color: var(--accent) !important; background: rgba(255,255,255,0.05); border: none; }
-        .table td { border-color: #334155 !important; background: transparent !important; color: #ffffff !important; }
+        /* TABLAS Y FORMULARIOS */
+        .table { color: #ffffff !important; font-size: 0.9rem; }
+        .table thead th { color: var(--accent) !important; background: rgba(255,255,255,0.05); border: none; white-space: nowrap; }
+        .table td { border-color: #334155 !important; background: transparent !important; }
 
         .input-dark {
             background: #0f172a !important;
@@ -60,87 +64,92 @@
             color: #ffffff !important;
             font-weight: bold;
         }
-        .input-dark:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25); }
-        .input-dark::placeholder { color: #64748b !important; font-weight: normal; font-size: 0.85rem; }
-
-        .badge-status { padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
-        .btn-action { border-radius: 8px; font-weight: 600; }
 
         .status-pill {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             padding: 2px 8px;
             border-radius: 20px;
             text-transform: uppercase;
         }
 
-        /* Notificaciones Live */
+        /* NOTIFICACIONES */
         #live-toast-container {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            position: fixed; top: 10px; right: 10px; z-index: 9999; width: 280px;
+        }
+
+        @media (max-width: 576px) {
+            h2 { font-size: 1.4rem; }
+            .btn-action { width: 100%; margin-bottom: 5px; }
+            .table-responsive { border: 0; }
         }
     </style>
 </head>
-<body class="p-3 p-md-4">
+<body class="p-2 p-md-4">
 
 <div id="live-toast-container"></div>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="mb-0 fw-bold text-info-bold"><i class="fas fa-user-shield me-2"></i>Control Gómez Moreno</h2>
-            <p class="text-muted-white mb-0">Gestión de Porras y Seguridad 2026</p>
+            <p class="text-muted-white mb-0 small">Gestión de Porras y Seguridad 2026</p>
         </div>
-        <div class="d-flex gap-2">
-            <form action="/admin/sincronizar-partidos" method="POST">
-                <button type="submit" class="btn btn-outline-info btn-action"><i class="fas fa-sync-alt me-2"></i>Sincronizar API</button>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <form action="/admin/sincronizar-partidos" method="POST" class="m-0">
+                <button type="submit" class="btn btn-outline-info btn-action"><i class="fas fa-sync-alt me-2"></i>API</button>
             </form>
             <a href="/" class="btn btn-primary btn-action">Ir al Juego <i class="fas fa-external-link-alt ms-1"></i></a>
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <!-- Stats Grid -->
+    <div class="row g-2 g-md-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="stat-card">
-                <small class="text-muted-white d-block mb-1 text-uppercase">Usuarios</small>
+                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Usuarios</small>
                 <h3 class="fw-bold mb-0" id="stat-usuarios"><%= usuarios.length %></h3>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: var(--warning);">
-                <small class="text-muted-white d-block mb-1 text-uppercase">Partidos Activos</small>
+                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Activos</small>
                 <h3 class="fw-bold mb-0 text-warning-bold" id="stat-partidos"><%= partidos.filter(p => p.estado !== 'finalizado').length %></h3>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: var(--success);">
-                <small class="text-muted-white d-block mb-1 text-uppercase">Total en Juego</small>
-                <h3 class="fw-bold mb-0 text-success-bold">
+                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">En Juego</small>
+                <h4 class="fw-bold mb-0 text-success-bold">
                     <span id="stat-dinero"><%= transacciones.filter(t => t.puntos_obtenidos === 0).reduce((acc, t) => acc + t.apostado, 0) %></span> <small style="font-size: 0.5em;">GmC</small>
-                </h3>
+                </h4>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="stat-card" style="border-color: #a855f7;">
-                <small class="text-muted-white d-block mb-1 text-uppercase">Apuestas Totales</small>
+                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Apuestas</small>
                 <h3 class="fw-bold mb-0" style="color: #d8b4fe !important;" id="stat-apuestas"><%= transacciones.length %></h3>
             </div>
         </div>
     </div>
 
+    <!-- Tabs Nav -->
     <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-usuarios"><i class="fas fa-users me-2"></i>Usuarios y Seguridad</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partidos"><i class="fas fa-futbol me-2"></i>Partidos</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-transacciones"><i class="fas fa-history me-2"></i>Historial</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-usuarios"><i class="fas fa-users me-1"></i> Seguridad</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partidos"><i class="fas fa-futbol me-1"></i> Partidos</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-transacciones"><i class="fas fa-history me-1"></i> Historial</button></li>
     </ul>
 
     <div class="tab-content">
+        <!-- Tab Usuarios -->
         <div class="tab-pane fade show active" id="tab-usuarios">
-            <div class="card card-admin p-4 mb-4 border-0">
-                <h5 class="mb-4 fw-bold text-info-bold"><i class="fas fa-user-plus me-2"></i>Nuevo Jugador</h5>
-                <form id="formNuevoUsuario" action="/admin/usuarios/add" method="POST" class="row g-3" autocomplete="off">
-                    <div class="col-md-4"><input type="text" name="nombre" class="form-control input-dark py-2" placeholder="Nombre" required></div>
-                    <div class="col-md-3"><input type="password" name="password" class="form-control input-dark py-2" placeholder="Password Temporal" required></div>
-                    <div class="col-md-3"><input type="number" name="creditos" class="form-control input-dark py-2" value="2000" placeholder="Créditos"></div>
-                    <div class="col-md-2"><button type="submit" class="btn btn-info w-100 fw-bold py-2 text-white">Registrar</button></div>
+            <div class="card card-admin p-3 p-md-4 mb-4 border-0">
+                <h5 class="mb-3 fw-bold text-info-bold small"><i class="fas fa-user-plus me-2"></i>Nuevo Jugador</h5>
+                <form id="formNuevoUsuario" action="/admin/usuarios/add" method="POST" class="row g-2" autocomplete="off">
+                    <div class="col-12 col-md-4"><input type="text" name="nombre" class="form-control input-dark" placeholder="Nombre" required></div>
+                    <div class="col-6 col-md-3"><input type="password" name="password" class="form-control input-dark" placeholder="Pass Temp" required></div>
+                    <div class="col-6 col-md-3"><input type="number" name="creditos" class="form-control input-dark" value="2000" placeholder="GmC"></div>
+                    <div class="col-12 col-md-2"><button type="submit" class="btn btn-info w-100 fw-bold text-white">Añadir</button></div>
                 </form>
             </div>
 
@@ -149,11 +158,11 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                         <tr>
-                            <th>Nombre</th>
-                            <th>Créditos</th>
-                            <th>Puntos</th>
-                            <th>Nueva Password</th>
-                            <th class="text-center">Acciones</th>
+                            <th>Usuario</th>
+                            <th style="width: 100px;">GmC</th>
+                            <th style="width: 100px;">PTS</th>
+                            <th>Reset Pass</th>
+                            <th class="text-center">Acción</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -161,24 +170,22 @@
                             <tr>
                                 <form action="/admin/usuarios/edit" method="POST">
                                     <input type="hidden" name="nombre" value="<%= u.nombre %>">
-                                    <td class="fw-bold fs-5 text-white">
-                                        <%= u.nombre %>
+                                    <td>
+                                        <div class="fw-bold"><%= u.nombre %></div>
                                         <% if(u.debe_cambiar_pass) { %>
-                                            <span class="status-pill bg-warning text-dark d-block" style="width: fit-content;">Reset Pendiente</span>
+                                            <span class="status-pill bg-warning text-dark">Reset Pendiente</span>
                                         <% } %>
                                     </td>
-                                    <td><input type="number" name="creditos" class="form-control input-dark form-control-sm w-75" value="<%= u.creditos %>"></td>
-                                    <td><input type="number" name="puntos" class="form-control input-dark form-control-sm w-75" value="<%= u.puntos %>"></td>
+                                    <td><input type="number" name="creditos" class="form-control input-dark form-control-sm" value="<%= u.creditos %>"></td>
+                                    <td><input type="number" name="puntos" class="form-control input-dark form-control-sm" value="<%= u.puntos %>"></td>
+                                    <td><input type="password" name="nueva_password" class="form-control input-dark form-control-sm" placeholder="Nueva..."></td>
                                     <td>
-                                        <input type="password" name="nueva_password" class="form-control input-dark form-control-sm" placeholder="Escribir para resetear">
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <button type="submit" class="btn btn-success btn-sm px-3 fw-bold"><i class="fas fa-save me-1"></i> Actualizar</button>
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-save"></i></button>
                                 </form>
-                                <form action="/admin/usuarios/delete" method="POST" onsubmit="return confirm('¿Eliminar a este usuario?')" style="display:inline;">
+                                <form action="/admin/usuarios/delete" method="POST" onsubmit="return confirm('¿Eliminar?')">
                                     <input type="hidden" name="nombre" value="<%= u.nombre %>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
                                 </form>
                 </div>
                 </td>
@@ -190,25 +197,26 @@
         </div>
     </div>
 
+    <!-- Tab Partidos -->
     <div class="tab-pane fade" id="tab-partidos">
         <div class="card card-admin p-0 border-0">
             <% partidos.forEach(p => { %>
-                <div class="p-4 border-bottom border-secondary <%= p.estado === 'finalizado' ? 'bg-dark bg-opacity-25' : '' %>" id="partido-row-<%= p.id %>">
-                    <form action="/admin/finalizar-partido" method="POST" class="row align-items-center g-3">
+                <div class="p-3 border-bottom border-secondary <%= p.estado === 'finalizado' ? 'bg-dark bg-opacity-25' : '' %>">
+                    <form action="/admin/finalizar-partido" method="POST" class="row align-items-center g-2">
                         <input type="hidden" name="id_partido" value="<%= p.id %>">
-                        <div class="col-md-4">
-                            <strong class="fs-5 d-block text-white"><%= p.equipo_a %> vs <%= p.equipo_b %></strong>
-                            <small class="text-info-bold"><%= new Date(p.fecha_partido).toLocaleString() %></small>
+                        <div class="col-12 col-md-4">
+                            <div class="fw-bold text-white"><%= p.equipo_a %> vs <%= p.equipo_b %></div>
+                            <small class="text-info-bold" style="font-size: 0.7rem;"><%= new Date(p.fecha_partido).toLocaleString() %></small>
                         </div>
                         <% if(p.estado !== 'finalizado') { %>
-                            <div class="col-md-2"><input type="number" name="resultado_a" class="form-control input-dark text-center" placeholder="Goles A"></div>
-                            <div class="col-md-2"><input type="number" name="resultado_b" class="form-control input-dark text-center" placeholder="Goles B"></div>
-                            <div class="col-md-4 text-end">
-                                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 text-dark"><i class="fas fa-check-double me-2"></i>Finalizar y Repartir</button>
+                            <div class="col-4 col-md-2"><input type="number" name="resultado_a" class="form-control input-dark text-center" placeholder="L"></div>
+                            <div class="col-4 col-md-2"><input type="number" name="resultado_b" class="form-control input-dark text-center" placeholder="V"></div>
+                            <div class="col-4 col-md-4">
+                                <button type="submit" class="btn btn-warning w-100 btn-sm fw-bold py-2"><i class="fas fa-check"></i> Finalizar</button>
                             </div>
                         <% } else { %>
-                            <div class="col-md-8 text-end">
-                                <span class="badge-status bg-success text-white border border-white fs-6">FINALIZADO: <%= p.resultado_a %> - <%= p.resultado_b %></span>
+                            <div class="col-12 col-md-8 text-md-end">
+                                <span class="badge bg-success w-100 w-md-auto py-2">FINAL: <%= p.resultado_a %> - <%= p.resultado_b %></span>
                             </div>
                         <% } %>
                     </form>
@@ -217,6 +225,7 @@
         </div>
     </div>
 
+    <!-- Tab Historial -->
     <div class="tab-pane fade" id="tab-transacciones">
         <div class="card card-admin border-0">
             <div class="table-responsive">
@@ -226,7 +235,6 @@
                         <th>Usuario</th>
                         <th>Partido</th>
                         <th class="text-center">Porra</th>
-                        <th class="text-center">Apostado</th>
                         <th>Premio</th>
                         <th>Estado</th>
                     </tr>
@@ -234,12 +242,11 @@
                     <tbody>
                     <% transacciones.forEach(t => { %>
                         <tr>
-                            <td class="fw-bold text-info-bold"><%= t.usuario %></td>
-                            <td class="text-white"><%= t.equipo_a %> vs <%= t.equipo_b %></td>
-                            <td class="text-center"><span class="badge bg-light text-dark px-3 py-2 fw-bold"><%= t.goles_a %> - <%= t.goles_b %></span></td>
-                            <td class="text-center fw-bold text-warning-bold"><%= t.apostado %> GmC</td>
-                            <td class="fw-bold text-success-bold"><%= t.puntos_obtenidos %> pts</td>
-                            <td><span class="badge-status <%= t.puntos_obtenidos > 0 ? 'bg-success text-white' : 'bg-warning text-dark' %>"><%= t.puntos_obtenidos > 0 ? 'PAGADO' : 'PENDIENTE' %></span></td>
+                            <td class="fw-bold text-info-bold small"><%= t.usuario %></td>
+                            <td class="text-white small"><%= t.equipo_a %> vs <%= t.equipo_b %></td>
+                            <td class="text-center"><span class="badge bg-light text-dark fw-bold"><%= t.goles_a %>-<%= t.goles_b %></span></td>
+                            <td class="fw-bold text-success-bold small"><%= t.puntos_obtenidos %> pts</td>
+                            <td><span class="status-pill <%= t.puntos_obtenidos > 0 ? 'bg-success' : 'bg-warning' %> text-white"><%= t.puntos_obtenidos > 0 ? 'OK' : '...' %></span></td>
                         </tr>
                     <% }) %>
                     </tbody>
@@ -255,55 +262,30 @@
 <script>
     const socket = io();
 
-    // Función para mostrar notificaciones sin recargar
     function showAdminNotify(msg, type = 'info') {
         const container = document.getElementById('live-toast-container');
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type} shadow-lg border-0 mb-2 animate__animated animate__fadeInRight`;
-        toast.style.minWidth = "250px";
-        toast.innerHTML = `<i class="fas fa-bell me-2"></i> ${msg}`;
+        toast.className = `alert alert-${type} shadow border-0 p-2 mb-2 small animate__animated animate__fadeInRight`;
+        toast.innerHTML = `<i class="fas fa-bell me-1"></i> ${msg}`;
         container.appendChild(toast);
         setTimeout(() => {
-            toast.classList.replace('animate__fadeInRight', 'animate__fadeOutRight');
-            setTimeout(() => toast.remove(), 500);
+            toast.remove();
         }, 4000);
     }
 
-    // --- ESCUCHADORES SOCKETS SIN RECARGA ---
-
     socket.on('actualizar_bolsa_live', (data) => {
-        showAdminNotify(`Nueva apuesta en partido #${data.id_partido}: <b>+${data.monto_apuesta} GmC</b>`, 'warning');
-        // Actualizamos el contador de "Total en Juego" arriba
+        showAdminNotify(`Apuesta en #${data.id_partido}: +${data.monto_apuesta} GmC`, 'warning');
         const elDinero = document.getElementById('stat-dinero');
         if(elDinero) {
-            let actual = parseInt(elDinero.innerText);
-            elDinero.innerText = actual + data.monto_apuesta;
+            elDinero.innerText = parseInt(elDinero.innerText) + data.monto_apuesta;
         }
     });
 
     socket.on('nuevo_usuario_registrado', () => {
-        showAdminNotify('Un nuevo usuario se ha unido.', 'info');
+        showAdminNotify('Nuevo usuario unido.', 'info');
         const elUserCount = document.getElementById('stat-usuarios');
         if(elUserCount) elUserCount.innerText = parseInt(elUserCount.innerText) + 1;
     });
-
-    // Mantenemos esto por seguridad, pero ya no forzamos el reload
-    socket.on('update_porra', () => {
-        console.log("Evento general de actualización recibido");
-        // Solo si quieres que el admin sepa que algo grande cambió:
-        showAdminNotify('El estado del servidor ha cambiado.', 'primary');
-    });
-
-    // Script de limpieza para el formulario de nuevo usuario
-    const formNuevo = document.getElementById('formNuevoUsuario');
-    if (formNuevo) {
-        formNuevo.addEventListener('submit', function() {
-            setTimeout(() => {
-                this.reset();
-                showAdminNotify('Petición de registro enviada.', 'success');
-            }, 100);
-        });
-    }
 </script>
 </body>
 </html>
