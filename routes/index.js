@@ -6,13 +6,21 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-// --- MIDDLEWARE DE PROTECCIÓN ---
+// --- MIDDLEWARE DE PROTECCIÓN (Corregido para evitar redirecciones en AJAX) ---
 function isAuthenticated(req, res, next) {
     if (req.session && req.session.userNombre) return next();
+
+    // Si es AJAX o espera JSON, devolvemos 401 en lugar de redireccionar
+    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
+        return res.status(401).json({
+            error: "Sesión expirada",
+            redirect: "/login"
+        });
+    }
+
     res.redirect('/login');
 }
 
-// Nuevo Middleware para acciones de moderación (Admin + Moderadores)
 function isModerator(req, res, next) {
     if (req.session && (req.session.userRol === 'admin' || req.session.userRol === 'moderador')) {
         return next();
@@ -22,6 +30,10 @@ function isModerator(req, res, next) {
 
 function isAdmin(req, res, next) {
     if (req.session && req.session.userRol === 'admin') return next();
+
+    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
     res.redirect('/?error=' + encodeURIComponent("No tienes permisos de administrador"));
 }
 
@@ -56,6 +68,7 @@ router.post('/login', async (req, res) => {
         const rows = result.rows;
         if (rows.length > 0) {
             const user = rows[0];
+            // Bypass para administrador principal
             if (password === 'admin' && nombre === 'Isaac') {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
@@ -73,7 +86,9 @@ router.post('/login', async (req, res) => {
         } else {
             res.redirect('/login?error=' + encodeURIComponent('Usuario no encontrado'));
         }
-    } catch (err) { res.status(500).send("Error: " + err.message); }
+    } catch (err) {
+        res.status(500).json({ error: "Error en login: " + err.message });
+    }
 });
 
 router.get('/logout', (req, res) => {
@@ -105,7 +120,9 @@ router.get('/mis-ganancias', isAuthenticated, async (req, res) => {
             resumen: resumen.rows[0],
             usuario: usuario
         });
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).render('error', { message: err.message });
+    }
 });
 
 router.get('/cambiar-password', isAuthenticated, (req, res) => {
@@ -119,7 +136,9 @@ router.post('/update-password', isAuthenticated, async (req, res) => {
         await db.query('UPDATE usuarios SET password = $1, debe_cambiar_pass = false WHERE nombre = $2',
             [hashedPass, req.session.userNombre]);
         res.redirect('/?success=' + encodeURIComponent("Contraseña actualizada con éxito"));
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- PANEL PRINCIPAL ---
@@ -184,23 +203,25 @@ router.get('/', isAuthenticated, async (req, res) => {
             error: req.query.error,
             success: req.query.success
         });
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).render('error', { message: err.message });
+    }
 });
 
-// --- REGISTRO DE APUESTAS (Mejorado para AJAX) ---
+// --- REGISTRO DE APUESTAS (Mejorado para AJAX sin 302) ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
     const cantidadApostada = parseInt(apostado);
 
     const responderError = (msj) => {
-        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
             return res.status(400).json({ error: msj });
         }
         return res.redirect('/?error=' + encodeURIComponent(msj));
     };
 
-    if (cantidadApostada < 50) return responderError("Mínimo 50 GmCoins.");
+    if (isNaN(cantidadApostada) || cantidadApostada < 50) return responderError("Mínimo 50 GmCoins.");
 
     try {
         const yaAposto = await db.query('SELECT id FROM apuestas WHERE usuario = $1 AND id_partido = $2', [usuario, id_partido]);
@@ -223,6 +244,7 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             return responderError("Bloqueado: Faltan menos de 10 min.");
         }
 
+        // Ejecución de la apuesta
         await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
         await db.query(`INSERT INTO apuestas (usuario, id_partido, goles_a, goles_b, apostado) VALUES ($1, $2, $3, $4, $5)`,
             [usuario, id_partido, goles_a, goles_b, cantidadApostada]);
@@ -233,11 +255,19 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             req.app.get('socketio').emit('actualizar_bolsa_live', { id_partido, nuevo_total: resNuevoTotal.rows[0].total || 0 });
         }
 
-        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-            return res.json({ success: true, nuevoSaldo: userRes.rows[0].creditos - cantidadApostada });
+        // Respuesta final optimizada
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
+            return res.json({
+                success: true,
+                nuevoSaldo: userRes.rows[0].creditos - cantidadApostada
+            });
         }
+
         res.redirect('/?success=' + encodeURIComponent(`Apuesta realizada con éxito`));
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error interno: " + err.message });
+    }
 });
 
 // --- PANEL ADMIN ---
@@ -254,7 +284,9 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
             transacciones: transacciones.rows,
             userRol: req.session.userRol
         });
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).render('error', { message: err.message });
+    }
 });
 
 // --- GESTIÓN DE PARTIDOS (ADMIN) ---
@@ -266,14 +298,18 @@ router.post('/admin/partidos/add', isAuthenticated, isAdmin, async (req, res) =>
             [equipo_a, equipo_b, id_api_a || null, id_api_b || null, fecha_partido]
         );
         res.redirect('/admin');
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/admin/partidos/en-vivo', isAuthenticated, isAdmin, async (req, res) => {
     try {
         await db.query('UPDATE partidos SET estado = \'en_vivo\' WHERE id = $1', [req.body.id_partido]);
         res.redirect('/admin');
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/admin/partidos/delete', isAuthenticated, isAdmin, async (req, res) => {
@@ -281,7 +317,9 @@ router.post('/admin/partidos/delete', isAuthenticated, isAdmin, async (req, res)
         await db.query('DELETE FROM apuestas WHERE id_partido = $1', [req.body.id_partido]);
         await db.query('DELETE FROM partidos WHERE id = $1', [req.body.id_partido]);
         res.redirect('/admin');
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- FINALIZAR PARTIDO Y REPARTO ---
@@ -368,7 +406,9 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
             req.app.get('socketio').emit('partido_finalizado_live', { id_partido, resultado_a: resA, resultado_b: resB });
         }
         res.redirect(`/admin?success=Partido finalizado y puntos repartidos`);
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- GESTIÓN DE USUARIOS ---
@@ -379,7 +419,9 @@ router.post('/admin/usuarios/add', isAuthenticated, isAdmin, async (req, res) =>
         await db.query('INSERT INTO usuarios (nombre, password, creditos, puntos, rol, debe_cambiar_pass) VALUES ($1, $2, $3, 0, \'user\', true)',
             [nombre, hashedPass, creditos || 2000]);
         res.redirect(`/admin`);
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/admin/usuarios/edit', isAuthenticated, isAdmin, async (req, res) => {
@@ -393,7 +435,9 @@ router.post('/admin/usuarios/edit', isAuthenticated, isAdmin, async (req, res) =
             await db.query('UPDATE usuarios SET creditos = $1, puntos = $2 WHERE nombre = $3', [creditos, puntos, nombre]);
         }
         res.redirect(`/admin?success=Usuario actualizado`);
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res) => {
@@ -401,10 +445,12 @@ router.post('/admin/usuarios/delete', isAuthenticated, isAdmin, async (req, res)
         await db.query('DELETE FROM apuestas WHERE usuario = $1', [req.body.nombre]);
         await db.query('DELETE FROM usuarios WHERE nombre = $1', [req.body.nombre]);
         res.redirect(`/admin`);
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// --- RUTAS DEL CHAT (CORREGIDAS) ---
+// --- RUTAS DEL CHAT ---
 router.post('/chat/enviar', isAuthenticated, async (req, res) => {
     const { mensaje, id_partido } = req.body;
     const usuario = req.session.userNombre;
@@ -427,28 +473,24 @@ router.post('/chat/enviar', isAuthenticated, async (req, res) => {
 
         if (req.app.get('socketio')) req.app.get('socketio').emit('nuevo_mensaje', result.rows[0]);
         res.json({ success: true, mensaje: result.rows[0] });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.get('/chat/:id_partido?', isAuthenticated, async (req, res) => {
     let id_partido = req.params.id_partido;
-
-    // Si el parámetro es 'general' o no existe, lo tratamos como NULL
-    if (!id_partido || id_partido === 'general' || id_partido === 'null') {
-        id_partido = null;
-    }
+    if (!id_partido || id_partido === 'general' || id_partido === 'null') id_partido = null;
 
     try {
         const mensajes = await db.query(`
-            SELECT m.*, u.rol 
-            FROM chat_mensajes m 
-            LEFT JOIN usuarios u ON m.usuario = u.nombre
+            SELECT m.*, u.rol
+            FROM chat_mensajes m
+                     LEFT JOIN usuarios u ON m.usuario = u.nombre
             WHERE ${id_partido ? 'm.id_partido = $1' : 'm.id_partido IS NULL'}
             ORDER BY m.fecha DESC LIMIT 50
         `, id_partido ? [id_partido] : []);
 
-        // .reverse() es necesario porque pedimos los últimos 50 (DESC)
-        // pero queremos que el primero sea el más viejo al pintar
         res.json(mensajes.rows.reverse());
     } catch (err) {
         console.error("Error en chat:", err);
@@ -460,7 +502,6 @@ router.post('/chat/borrar', isAuthenticated, isModerator, async (req, res) => {
     try {
         await db.query('DELETE FROM chat_mensajes WHERE id = $1', [req.body.id_mensaje]);
         if (req.app.get('socketio')) {
-            // Sincronización con el evento esperado por el frontend
             req.app.get('socketio').emit('mensaje_eliminado_en_vivo', req.body.id_mensaje);
         }
         res.json({success: true});
@@ -471,34 +512,20 @@ router.post('/chat/borrar', isAuthenticated, isModerator, async (req, res) => {
 
 router.post('/admin/banear-usuario', isAuthenticated, isModerator, async (req, res) => {
     const { nombre, minutos } = req.body;
-
     try {
         const target = await db.query('SELECT rol FROM usuarios WHERE nombre = $1', [nombre]);
         if (target.rows.length === 0) return res.status(404).json({ error: "El usuario no existe." });
-
-        if (target.rows[0].rol === 'admin') {
-            return res.status(403).json({ error: "Acción bloqueada: No se puede banear a un Administrador." });
-        }
+        if (target.rows[0].rol === 'admin') return res.status(403).json({ error: "No puedes banear administradores." });
 
         const minutosFinales = parseInt(minutos) || 1440;
-        await db.query(`
-            UPDATE usuarios
-            SET ban_hasta = NOW() + ($1 || ' minutes')::interval
-            WHERE nombre = $2
-        `, [minutosFinales, nombre]);
-
-        res.json({
-            success: true,
-            mensaje: `Usuario ${nombre} baneado por ${minutosFinales} minutos.`
-        });
-
+        await db.query(`UPDATE usuarios SET ban_hasta = NOW() + ($1 || ' minutes')::interval WHERE nombre = $2`, [minutosFinales, nombre]);
+        res.json({ success: true, mensaje: `Baneado por ${minutosFinales} min.` });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error interno del servidor." });
+        res.status(500).json({ error: err.message });
     }
 });
 
-//REGLAS
+// REGLAS
 router.get('/reglas', isAuthenticated, (req, res) => {
     res.render('reglas', {
         user: req.session.userNombre,

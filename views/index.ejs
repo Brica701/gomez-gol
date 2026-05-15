@@ -160,7 +160,6 @@
       transform: scale(1.1);
     }
 
-    /* NUEVO: PUNTO ROJO DE NOTIFICACIÓN */
     .notification-badge {
       position: absolute;
       top: 2px;
@@ -412,7 +411,6 @@
   </div>
 </div>
 
-<!-- BOTÓN FLOTANTE CON NOTIFICACIÓN -->
 <button onclick="toggleChat()" class="btn btn-success shadow-lg rounded-circle" style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1001;">
   <i class="fas fa-comments fs-4"></i>
   <span id="chat-notification" class="notification-badge"></span>
@@ -425,7 +423,6 @@
   const userRol = "<%= user.rol %>";
   let chatActual = null;
 
-  // 1. CARGA INICIAL
   window.onload = () => {
     const hoy = new Date().toISOString().split('T')[0];
     const datePicker = document.getElementById('main-date-picker');
@@ -433,11 +430,9 @@
       datePicker.value = hoy;
       filterMatchesByDate(hoy);
     }
-    // Cargamos mensajes del general en silencio al inicio
     cargarMensajes();
   };
 
-  // --- FUNCIÓN CORREGIDA PARA ABRIR DEL TIRÓN ---
   function setChat(id, titulo) {
     chatActual = id;
     const chatTitle = document.getElementById('chat-title');
@@ -445,35 +440,48 @@
     const notif = document.getElementById('chat-notification');
 
     if(chatTitle) chatTitle.innerText = titulo;
-
-    if(chatContainer) {
-      chatContainer.style.display = 'flex';
-    }
-
-    // Al abrir una sala específica, limpiamos la notificación
+    if(chatContainer) chatContainer.style.display = 'flex';
     if(notif) notif.style.display = 'none';
-
     cargarMensajes();
   }
 
   function filterMatchesByDate(selectedDate) {
     const items = document.querySelectorAll('.match-item');
-    let countVisible = 0;
+    let countApostados = 0;
+    let countDisponibles = 0;
+
     items.forEach(item => {
-      if (item.getAttribute('data-date') === selectedDate) {
+      const isVisible = item.getAttribute('data-date') === selectedDate;
+      if (isVisible) {
         item.classList.remove('partido-hidden');
-        countVisible++;
+        // Contamos en qué sección está el partido visible
+        if (item.closest('#mis-apuestas-container')) countApostados++;
+        if (item.closest('#disponibles-container')) countDisponibles++;
       } else {
         item.classList.add('partido-hidden');
       }
     });
-    const noMsg = document.getElementById('no-apuestas-msg');
-    if (noMsg) {
-      noMsg.style.display = countVisible === 0 ? 'block' : 'none';
-      noMsg.innerText = "No hay partidos para el día " + selectedDate;
+
+    // Manejo del mensaje de "No tienes apuestas"
+    const noApuestasMsg = document.getElementById('no-apuestas-msg');
+    if (noApuestasMsg) {
+      if (countApostados === 0) {
+        noApuestasMsg.style.display = 'block';
+        noApuestasMsg.classList.remove('partido-hidden');
+        noApuestasMsg.innerText = "No tienes apuestas para el día " + selectedDate;
+      } else {
+        noApuestasMsg.style.display = 'none';
+        noApuestasMsg.classList.add('partido-hidden');
+      }
+    }
+
+    // Opcional: Si quieres un mensaje similar para la lista de disponibles
+    const disponiblesCont = document.getElementById('disponibles-container');
+    if (disponiblesCont && countDisponibles === 0) {
+      // Podrías añadir un feedback visual aquí si lo deseas
+      console.log("No hay partidos disponibles para esta fecha.");
     }
   }
-
   function setQuickDate(daysToAdd) {
     const d = new Date();
     d.setDate(d.getDate() + daysToAdd);
@@ -482,37 +490,74 @@
     filterMatchesByDate(iso);
   }
 
-  // Lógica de apuestas (sin cambios)
+  // --- LÓGICA DE APUESTAS ACTUALIZADA (Maneja sesión expirada) ---
   document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = form.querySelector('button');
+      const card = form.closest('.glass-card');
       const formData = new FormData(form);
-      const data = {
-        id_partido: formData.get('id_partido'),
-        goles_a: formData.get('goles_a'),
-        goles_b: formData.get('goles_b'),
-        apostado: formData.get('apostado')
-      };
+
+      const id_partido = formData.get('id_partido');
+      const goles_a = formData.get('goles_a');
+      const goles_b = formData.get('goles_b');
+      const cantidad = formData.get('apostado');
+
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
       try {
         const res = await fetch('/apostar', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest' // Importante para que Express detecte req.xhr
+          },
+          body: JSON.stringify({ id_partido, goles_a, goles_b, apostado: cantidad })
         });
+
+        // Si el servidor dice que la sesión expiró (401)
+        if (res.status === 401) {
+          const data = await res.json();
+          window.location.href = data.redirect || '/login';
+          return;
+        }
+
+        const result = await res.json();
+
         if (res.ok) {
-          location.reload();
+          const saldoTop = document.getElementById('user-creditos-top');
+          if (saldoTop && result.nuevoSaldo !== undefined) {
+            saldoTop.innerText = result.nuevoSaldo;
+          }
+
+          const parent = form.parentElement;
+          form.remove();
+
+          const apuestaInfo = document.createElement('div');
+          apuestaInfo.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success';
+          apuestaInfo.innerHTML = `
+            <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: ${goles_a} - ${goles_b}</span>
+            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(${cantidad} GmC)</div>
+          `;
+          parent.appendChild(apuestaInfo);
+
+          const misApuestasCont = document.getElementById('mis-apuestas-container');
+          const noMsg = document.getElementById('no-apuestas-msg');
+          if (noMsg) noMsg.style.display = 'none';
+
+          card.classList.add('border-success');
+          misApuestasCont.prepend(card);
         } else {
-          const errData = await res.json();
-          alert(errData.error || "Error al apostar");
+          alert(result.error || "Error al apostar");
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-check"></i>';
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error:", e);
+        alert("Error de conexión con el servidor.");
         btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
       }
     });
   });
@@ -593,7 +638,6 @@
 
     if(isHidden) {
       cargarMensajes();
-      // Ocultar notificación al abrir manualmente
       if(notif) notif.style.display = 'none';
     }
   }
@@ -624,13 +668,10 @@
     const notif = document.getElementById('chat-notification');
     const isOpen = chatContainer && chatContainer.style.display === 'flex';
 
-    // 1. Mostrar en pantalla si es la sala correcta
     if (String(m.id_partido) === String(chatActual) || (m.id_partido === null && chatActual === null)) {
       renderSingleMessage(m);
     }
 
-    // 2. Lógica de punto rojo:
-    // Mostrar si el chat está CERRADO o si el mensaje es de una sala distinta a la actual
     if (!isOpen || String(m.id_partido) !== String(chatActual)) {
       if(notif) notif.style.display = 'block';
     }
