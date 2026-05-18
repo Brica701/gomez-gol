@@ -191,7 +191,7 @@ router.get('/', isAuthenticated, async (req, res) => {
             SELECT p.equipo_a, p.equipo_b, a.puntos_obtenidos, TO_CHAR(p.fecha_partido, 'DD/MM') as fecha
             FROM apuestas a JOIN partidos p ON a.id_partido = p.id
             WHERE a.usuario = $1 AND p.estado = 'finalizado'
-            ORDER BY p.fecha_partido ASC LIMIT 10
+            ORDER BY p.fecha_partido ASC
         `, [usuarioLogueado]);
 
         res.render('index', {
