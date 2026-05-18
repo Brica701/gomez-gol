@@ -1,691 +1,709 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Gomez-Gol Pro | 2026</title>
-  <link rel="icon" href="data:,">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --primary-color: #28a745;
-      --glass-bg: rgba(255, 255, 255, 0.08);
-      --glass-border: rgba(255, 255, 255, 0.15);
-      --streak-gold: #ffc107;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gomez-Gol Pro | 2026</title>
+    <link rel="icon" href="data:,">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --streak-gold: #ffc107;
+        }
 
-    body {
-      background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-      url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop');
-      background-size: cover; background-position: center; background-attachment: fixed;
-      min-height: 100vh; color: #ffffff !important;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-    }
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+            url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh; color: #ffffff !important;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
 
-    h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important; }
+        h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important; }
 
-    .navbar {
-      background: rgba(0, 0, 0, 0.8) !important;
-      backdrop-filter: blur(15px);
-      border-bottom: 2px solid var(--primary-color);
-    }
+        .navbar {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid var(--primary-color);
+        }
 
-    .glass-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      transition: all 0.4s ease;
-    }
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            transition: all 0.4s ease;
+        }
 
-    /* FILTRO DE FECHAS */
-    .date-filter-box {
-      background: rgba(0,0,0,0.4);
-      border-radius: 15px;
-      padding: 10px;
-      border: 1px solid var(--glass-border);
-    }
-    .date-input-custom {
-      background: #fff !important;
-      color: #000 !important;
-      border-radius: 8px;
-      font-weight: bold;
-    }
+        /* FILTRO DE FECHAS */
+        .date-filter-box {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 10px;
+            border: 1px solid var(--glass-border);
+        }
+        .date-input-custom {
+            background: #fff !important;
+            color: #000 !important;
+            border-radius: 8px;
+            font-weight: bold;
+        }
 
-    .escudo-team {
-      width: 40px;
-      height: 40px;
-      object-fit: contain;
-      margin-bottom: 5px;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-    }
+        .escudo-team {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
 
-    .partido-hidden { display: none !important; }
+        .partido-hidden { display: none !important; }
 
-    .streak-badge {
-      background: rgba(255, 193, 7, 0.15);
-      border: 1px solid var(--streak-gold);
-      color: var(--streak-gold) !important;
-      font-size: 0.75rem;
-      font-weight: 800;
-    }
+        .streak-badge {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid var(--streak-gold);
+            color: var(--streak-gold) !important;
+            font-size: 0.7rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
 
-    /* BOTONES DE MODERACIÓN VISIBLES EN MÓVIL */
-    .btn-mod-action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      margin-left: 5px;
-      border: none;
-      color: white !important;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-    .btn-mod-del { background: #dc3545; }
-    .btn-mod-ban { background: #343a40; }
+        .badge-coins {
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
 
-    .partidos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1rem;
-    }
+        /* BOTONES DE MODERACIÓN VISIBLES EN MÓVIL */
+        .btn-mod-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+            border: none;
+            color: white !important;
+            cursor: pointer;
+            opacity: 0.9;
+        }
+        .btn-mod-del { background: #dc3545; }
+        .btn-mod-ban { background: #343a40; }
 
-    .vs-circle {
-      width: 32px; height: 32px; background: var(--primary-color);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-weight: 900; margin: 0 auto; font-size: 0.65rem;
-    }
+        .partidos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+        }
 
-    .form-control-mobile {
-      background: rgba(255, 255, 255, 0.9) !important;
-      border: 1px solid rgba(255, 255, 255, 0.2) !important;
-      color: #000000 !important; border-radius: 10px; text-align: center;
-      font-weight: bold;
-    }
-    .form-control-mobile::placeholder { color: #666; }
+        .vs-circle {
+            width: 32px; height: 32px; background: var(--primary-color);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; margin: 0 auto; font-size: 0.65rem;
+        }
 
-    .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
-    .btn-bet:disabled { background: #6c757d; opacity: 0.6; }
+        .form-control-mobile {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #000000 !important; border-radius: 10px; text-align: center;
+            font-weight: bold;
+        }
+        .form-control-mobile::placeholder { color: #666; }
 
-    #chat-container {
-      position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
-      z-index: 1050; display: none; flex-direction: column;
-      border-radius: 20px; overflow: hidden;
-    }
-    #chat-messages { height: 390px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; }
-    .msg { max-width: 85%; padding: 8px 12px; border-radius: 15px; font-size: 0.85rem; position: relative; margin-bottom: 8px; color: white !important; }
-    .msg-others { align-self: flex-start; background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
-    .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px; }
-    .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8; color: #38bdf8 !important; }
+        .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
+        .btn-bet:disabled { background: #6c757d; opacity: 0.6; }
 
-    .footer-glass {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(15px);
-      border-top: 1px solid var(--glass-border);
-      padding: 3rem 0 2rem 0;
-      margin-top: auto;
-    }
+        #chat-container {
+            position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
+            z-index: 1050; display: none; flex-direction: column;
+            border-radius: 20px; overflow: hidden;
+        }
+        #chat-messages { height: 390px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; }
+        .msg { max-width: 85%; padding: 8px 12px; border-radius: 15px; font-size: 0.85rem; position: relative; margin-bottom: 8px; color: white !important; }
+        .msg-others { align-self: flex-start; background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
+        .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px; }
+        .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8; color: #38bdf8 !important; }
 
-    .logo-container {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px;
-      border-radius: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 180px;
-      height: 85px;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      overflow: hidden;
-    }
+        .footer-glass {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid var(--glass-border);
+            padding: 3rem 0 2rem 0;
+            margin-top: auto;
+        }
 
-    .logo-container:hover {
-      transform: scale(1.05);
-      background: #ffffff;
-      box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
-    }
+        .logo-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 85px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
 
-    .footer-logo {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transform: scale(1.1);
-    }
+        .logo-container:hover {
+            transform: scale(1.05);
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
+        }
 
-    .notification-badge {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 14px;
-      height: 14px;
-      background-color: #ff3b30;
-      border: 2px solid #ffffff;
-      border-radius: 50%;
-      display: none;
-      z-index: 1002;
-    }
+        .footer-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transform: scale(1.1);
+        }
 
-    @media (max-width: 576px) {
-      #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
-      .logo-container { width: 140px; height: 70px; }
-    }
-  </style>
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            background-color: #ff3b30;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            display: none;
+            z-index: 1002;
+        }
+
+        @media (max-width: 576px) {
+            #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
+            .logo-container { width: 140px; height: 70px; }
+        }
+
+        @media (max-width: 400px) {
+            .navbar .container {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            .navbar .d-flex.align-items-center.gap-2 {
+                gap: 4px !important;
+            }
+            .navbar .btn-sm {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                font-size: 0.65rem !important;
+            }
+            .streak-badge, .badge-coins {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark sticky-top shadow">
-  <div class="container d-flex justify-content-between align-items-center">
-    <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
-    <div class="d-flex align-items-center gap-2">
-      <a href="/reglas" class="btn btn-outline-warning rounded-pill px-3 btn-sm fw-bold">
-        <i class="fas fa-book me-1"></i> Reglas
-      </a>
-      <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
-        <i class="fas fa-globe me-1"></i> General
-      </button>
-      <div class="streak-badge px-2 py-1 rounded-pill">
-        <i class="fas fa-fire me-1"></i> x<span id="user-racha-top"><%= user.racha_ganador || 0 %></span>
-      </div>
-      <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
-        <i class="fas fa-coins text-warning me-1"></i> <span id="user-creditos-top"><%= user.creditos %></span>
-      </div>
-      <% if (user.rol === 'admin' || user.rol === 'moderador') { %>
-        <a href="/admin" class="ms-1 text-white"><i class="fas fa-user-shield fs-5"></i></a>
-      <% } %>
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand fw-bold" href="#">GOMEZ<span class="text-info">-GOL</span></a>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/reglas" class="btn btn-outline-warning rounded-pill px-3 btn-sm fw-bold">
+                <i class="fas fa-book me-1"></i> Reglas
+            </a>
+            <button onclick="setChat(null, 'Chat General')" class="btn btn-outline-info rounded-pill px-3 btn-sm">
+                <i class="fas fa-globe me-1"></i> General
+            </button>
+            <div class="streak-badge px-2 py-1 rounded-pill">
+                <i class="fas fa-fire me-1"></i> x<span id="user-racha-top"><%= user.racha_ganador || 0 %></span>
+            </div>
+            <div class="badge-coins border border-success px-3 py-1 rounded-pill bg-dark bg-opacity-50">
+                <i class="fas fa-coins text-warning me-1"></i> <span id="user-creditos-top"><%= user.creditos %></span>
+            </div>
+            <% if (user.rol === 'admin' || user.rol === 'moderador') { %>
+                <a href="/admin" class="ms-1 text-white"><i class="fas fa-user-shield fs-5"></i></a>
+            <% } %>
+        </div>
     </div>
-  </div>
 </nav>
 
 <div class="container mt-3 mb-5">
-  <div class="date-filter-box d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h6 class="m-0 text-uppercase small fw-bold text-success"><i class="fas fa-calendar-day me-2"></i> Filtrar Partidos</h6>
-    <div class="d-flex gap-2">
-      <button class="btn btn-sm btn-outline-success" onclick="setQuickDate(0)">Hoy</button>
-      <button class="btn btn-sm btn-outline-light" onclick="setQuickDate(1)">Mañana</button>
-      <input type="date" id="main-date-picker" class="form-control form-control-sm date-input-custom" onchange="filterMatchesByDate(this.value)">
+    <div class="date-filter-box d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h6 class="m-0 text-uppercase small fw-bold text-success"><i class="fas fa-calendar-day me-2"></i> Filtrar Partidos</h6>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-success" onclick="setQuickDate(0)">Hoy</button>
+            <button class="btn btn-sm btn-outline-light" onclick="setQuickDate(1)">Mañana</button>
+            <input type="date" id="main-date-picker" class="form-control form-control-sm date-input-custom" onchange="filterMatchesByDate(this.value)">
+        </div>
     </div>
-  </div>
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <a href="/mis-ganancias" class="btn btn-success w-100 fw-bold shadow-sm py-2">
-        <i class="fas fa-hand-holding-usd me-2"></i> VER MIS GANANCIAS Y PUNTOS TOTALES
-      </a>
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="/mis-ganancias" class="btn btn-success w-100 fw-bold shadow-sm py-2">
+                <i class="fas fa-hand-holding-usd me-2"></i> VER MIS GANANCIAS Y PUNTOS TOTALES
+            </a>
+        </div>
     </div>
-  </div>
 
-  <div class="row g-4">
-    <div class="col-lg-9">
-      <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
-      <div id="mis-apuestas-container" class="partidos-grid mb-5">
-        <%
-        let apostados = partidos.filter(p => apuestas_usuario.find(a => a.id_partido === p.id));
-        if(apostados.length === 0) {
-        %>
-          <div id="no-apuestas-msg" class="col-12 opacity-50 small ps-2">No tienes apuestas para este día.</div>
-        <% } else {
-        apostados.forEach(partido => {
-          const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
+    <div class="row g-4">
+        <div class="col-lg-9">
+            <h5 class="mb-3 text-uppercase fw-bold text-success small"><i class="fas fa-check-circle me-2"></i> Mis Apuestas Realizadas</h5>
+            <div id="mis-apuestas-container" class="partidos-grid mb-5">
+                <%
+                let apostados = partidos.filter(p => apuestas_usuario.find(a => a.id_partido === p.id));
+                if(apostados.length === 0) {
+                %>
+                    <div id="no-apuestas-msg" class="col-12 opacity-50 small ps-2">No tienes apuestas para este día.</div>
+                <% } else {
+                apostados.forEach(partido => {
+                    const yaAposto = apuestas_usuario.find(a => a.id_partido === partido.id);
 
-          let fISO = "";
-          let horaEsp = "00:00";
-          try {
-            let d = new Date(partido.fecha_partido);
-            if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
-            fISO = d.toISOString().split('T')[0];
-            horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
-          } catch(e) { console.error("Error fecha apuesta:", e); }
-        %>
-        <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
-          <div class="d-flex justify-content-between mb-2">
-            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
-            <% if (partido.en_vivo) { %>
-              <span class="badge bg-danger text-white blink" style="font-size: 0.6rem;">EN CURSO</span>
-            <% } %>
-            <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
-          </div>
-          <div class="row align-items-center text-center my-2">
-            <div class="col-5">
-              <img src="https://crests.football-data.org/<%= partido.id_api_a %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
-              <span class="fw-bold small text-uppercase"><%= partido.equipo_a %></span>
-            </div>
-            <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
-            <div class="col-5">
-              <img src="https://crests.football-data.org/<%= partido.id_api_b %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
-              <span class="fw-bold small text-uppercase"><%= partido.equipo_b %></span>
-            </div>
-          </div>
-          <div class="text-center mb-2">
+                    let fISO = "";
+                    let horaEsp = "00:00";
+                    try {
+                        let d = new Date(partido.fecha_partido);
+                        if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
+                        fISO = d.toISOString().split('T')[0];
+                        horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
+                    } catch(e) { console.error("Error fecha apuesta:", e); }
+                %>
+                <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
+                        <% if (partido.en_vivo) { %>
+                            <span class="badge bg-danger text-white blink" style="font-size: 0.6rem;">EN CURSO</span>
+                        <% } %>
+                        <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
+                    </div>
+                    <div class="row align-items-center text-center my-2">
+                        <div class="col-5">
+                            <img src="https://crests.football-data.org/<%= partido.id_api_a %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
+                            <span class="fw-bold small text-uppercase"><%= partido.equipo_a %></span>
+                        </div>
+                        <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
+                        <div class="col-5">
+                            <img src="https://crests.football-data.org/<%= partido.id_api_b %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
+                            <span class="fw-bold small text-uppercase"><%= partido.equipo_b %></span>
+                        </div>
+                    </div>
+                    <div class="text-center mb-2">
               <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
                 <i class="fas fa-vault text-info me-1"></i> BOLSA: <span class="text-info fw-bold bolsa-partido-<%= partido.id %>"><%= partido.total_apostado || 0 %> GmC</span>
               </span>
-          </div>
-          <div class="text-center py-2 rounded-3 bg-white shadow-sm border border-success">
-            <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: <%= yaAposto.goles_a %> - <%= yaAposto.goles_b %></span>
-            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(<%= yaAposto.apostado %> GmC)</div>
-          </div>
-        </div>
-        <% })} %>
-      </div>
-
-      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
-      <div id="disponibles-container" class="partidos-grid mb-5">
-        <%
-        let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
-        pendientes.forEach(partido => {
-          const isBloqueado = partido.bloqueado === 1;
-
-          let fISO = "";
-          let horaEsp = "00:00";
-          try {
-            let d = new Date(partido.fecha_partido);
-            if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
-            fISO = d.toISOString().split('T')[0];
-            horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
-          } catch(e) { console.error("Error fecha disponible:", e); }
-        %>
-        <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
-          <div class="d-flex justify-content-between mb-2">
-            <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
-            <% if (isBloqueado) { %>
-              <span class="badge bg-secondary text-white" style="font-size: 0.6rem;">CERRADO</span>
-            <% } %>
-            <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
-          </div>
-          <div class="row align-items-center text-center my-2">
-            <div class="col-5">
-              <img src="https://crests.football-data.org/<%= partido.id_api_a %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
-              <span class="fw-bold small text-uppercase"><%= partido.equipo_a %></span>
+                    </div>
+                    <div class="text-center py-2 rounded-3 bg-white shadow-sm border border-success">
+                        <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: <%= yaAposto.goles_a %> - <%= yaAposto.goles_b %></span>
+                        <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(<%= yaAposto.apostado %> GmC)</div>
+                    </div>
+                </div>
+                <% })} %>
             </div>
-            <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
-            <div class="col-5">
-              <img src="https://crests.football-data.org/<%= partido.id_api_b %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
-              <span class="fw-bold small text-uppercase"><%= partido.equipo_b %></span>
-            </div>
-          </div>
 
-          <div class="text-center mb-3">
+            <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
+            <div id="disponibles-container" class="partidos-grid mb-5">
+                <%
+                let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
+                pendientes.forEach(partido => {
+                    const isBloqueado = partido.bloqueado === 1;
+
+                    let fISO = "";
+                    let horaEsp = "00:00";
+                    try {
+                        let d = new Date(partido.fecha_partido);
+                        if (isNaN(d.getTime())) d = new Date(String(partido.fecha_partido).replace(' ', 'T'));
+                        fISO = d.toISOString().split('T')[0];
+                        horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
+                    } catch(e) { console.error("Error fecha disponible:", e); }
+                %>
+                <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
+                        <% if (isBloqueado) { %>
+                            <span class="badge bg-secondary text-white" style="font-size: 0.6rem;">CERRADO</span>
+                        <% } %>
+                        <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
+                    </div>
+                    <div class="row align-items-center text-center my-2">
+                        <div class="col-5">
+                            <img src="https://crests.football-data.org/<%= partido.id_api_a %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
+                            <span class="fw-bold small text-uppercase"><%= partido.equipo_a %></span>
+                        </div>
+                        <div class="col-2 p-0"><div class="vs-circle">VS</div></div>
+                        <div class="col-5">
+                            <img src="https://crests.football-data.org/<%= partido.id_api_b %>.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/53/53283.png'" class="escudo-team"><br>
+                            <span class="fw-bold small text-uppercase"><%= partido.equipo_b %></span>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-3">
               <span class="badge bg-dark bg-opacity-50 border border-info border-opacity-25 rounded-pill px-3 py-1" style="font-size: 0.7rem;">
                 <i class="fas fa-vault text-info me-1"></i> BOLSA TOTAL: <span class="text-info fw-bold bolsa-partido-<%= partido.id %>"><%= partido.total_apostado || 0 %> GmC</span>
               </span>
-          </div>
+                    </div>
 
-          <form class="mt-2 form-apuesta-ajax">
-            <input type="hidden" name="id_partido" value="<%= partido.id %>">
-            <div class="row g-1">
-              <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isBloqueado ? 'disabled' : '' %>></div>
-              <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required <%= isBloqueado ? 'disabled' : '' %>></div>
-              <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required <%= isBloqueado ? 'disabled' : '' %>></div>
-              <div class="col-2">
-                <button type="submit" class="btn btn-bet w-100 py-1" <%= isBloqueado ? 'disabled' : '' %>>
-                  <i class="fas <%= isBloqueado ? 'fa-lock' : 'fa-check' %>"></i>
-                </button>
-              </div>
+                    <form class="mt-2 form-apuesta-ajax">
+                        <input type="hidden" name="id_partido" value="<%= partido.id %>">
+                        <div class="row g-1">
+                            <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isBloqueado ? 'disabled' : '' %>></div>
+                            <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required <%= isBloqueado ? 'disabled' : '' %>></div>
+                            <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required <%= isBloqueado ? 'disabled' : '' %>></div>
+                            <div class="col-2">
+                                <button type="submit" class="btn btn-bet w-100 py-1" <%= isBloqueado ? 'disabled' : '' %>>
+                                    <i class="fas <%= isBloqueado ? 'fa-lock' : 'fa-check' %>"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <% }) %>
             </div>
-          </form>
         </div>
-        <% }) %>
-      </div>
-    </div>
 
-    <div class="col-lg-3">
-      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-fire-alt text-warning me-2"></i> Mis Rachas Actuales</h5>
-      <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="small fw-bold">Aciertos Seguidos:</span>
-          <span class="badge streak-gold text-dark bg-warning px-2" id="racha-ganador-panel"><%= user.racha_ganador || 0 %></span>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="small fw-bold">Plenos Seguidos:</span>
-          <span class="badge bg-info text-dark px-2" id="racha-exacta-panel"><%= user.racha_exacta || 0 %></span>
-        </div>
-      </div>
+        <div class="col-lg-3">
+            <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-fire-alt text-warning me-2"></i> Mis Rachas Actuales</h5>
+            <div class="card glass-card p-3 mb-4 border-warning border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold">Aciertos Seguidos:</span>
+                    <span class="badge streak-gold text-dark bg-warning px-2" id="racha-ganador-panel"><%= user.racha_ganador || 0 %></span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="small fw-bold">Plenos Seguidos:</span>
+                    <span class="badge bg-info text-dark px-2" id="racha-exacta-panel"><%= user.racha_exacta || 0 %></span>
+                </div>
+            </div>
 
-      <h5 class="mb-3 text-uppercase fw-bold opacity-75 small">🏆 Ranking</h5>
-      <div class="card glass-card overflow-hidden border-0 mb-4">
-        <table class="table table-dark table-sm mb-0">
-          <tbody>
-          <% ranking.slice(0, 10).forEach((u, i) => { %>
-            <tr>
-              <td class="ps-3 py-2 text-info fw-bold"><%= i + 1 %></td>
-              <td class="text-uppercase small"><%= u.nombre %></td>
-              <td class="text-end pe-3 fw-bold"><%= u.puntos %> <small class="opacity-50">pts</small></td>
-            </tr>
-          <% }) %>
-          </tbody>
-        </table>
-      </div>
-      <a href="/logout" class="btn btn-outline-danger btn-sm w-100 mb-3">CERRAR SESIÓN</a>
+            <h5 class="mb-3 text-uppercase fw-bold opacity-75 small">🏆 Ranking</h5>
+            <div class="card glass-card overflow-hidden border-0 mb-4">
+                <table class="table table-dark table-sm mb-0">
+                    <tbody>
+                    <% ranking.slice(0, 10).forEach((u, i) => { %>
+                        <tr>
+                            <td class="ps-3 py-2 text-info fw-bold"><%= i + 1 %></td>
+                            <td class="text-uppercase small"><%= u.nombre %></td>
+                            <td class="text-end pe-3 fw-bold"><%= u.puntos %> <small class="opacity-50">pts</small></td>
+                        </tr>
+                    <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <a href="/logout" class="btn btn-outline-danger btn-sm w-100 mb-3">CERRAR SESIÓN</a>
+        </div>
     </div>
-  </div>
 </div>
 
 <footer class="footer-glass">
-  <div class="container">
-    <div class="row align-items-center justify-content-center g-4">
-      <div class="col-auto">
-        <div class="logo-container">
-          <img src="/images/cuadrotek.png" alt="CuadroTek" class="footer-logo">
+    <div class="container">
+        <div class="row align-items-center justify-content-center g-4">
+            <div class="col-auto">
+                <div class="logo-container">
+                    <img src="/images/cuadrotek.png" alt="CuadroTek" class="footer-logo">
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="logo-container">
+                    <img src="/images/gomez_moreno_logo (1)-nobg.svg" alt="Gomez Moreno" class="footer-logo">
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="logo-container">
+                    <img src="/images/mercasat.png" alt="Mercasat" class="footer-logo">
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-auto">
-        <div class="logo-container">
-          <img src="/images/gomez_moreno_logo (1)-nobg.svg" alt="Gomez Moreno" class="footer-logo">
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <p class="small opacity-50 mb-0" style="font-size: 0.75rem; letter-spacing: 2px;">
+                    © 2026 GOMEZ-GOL | DESARROLLADO POR ISAAC CRUZ
+                </p>
+            </div>
         </div>
-      </div>
-      <div class="col-auto">
-        <div class="logo-container">
-          <img src="/images/mercasat.png" alt="Mercasat" class="footer-logo">
-        </div>
-      </div>
     </div>
-    <div class="row mt-5">
-      <div class="col-12 text-center">
-        <p class="small opacity-50 mb-0" style="font-size: 0.75rem; letter-spacing: 2px;">
-          © 2026 GOMEZ-GOL | DESARROLLADO POR ISAAC CRUZ
-        </p>
-      </div>
-    </div>
-  </div>
 </footer>
 
 <div id="chat-container" class="glass-card shadow-lg flex-column">
-  <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
-    <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
-    <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
-  </div>
-  <div id="chat-messages" class="flex-grow-1 p-3"></div>
-  <div class="p-2 border-top border-white border-opacity-10 bg-dark">
-    <div class="input-group input-group-sm">
-      <input type="text" id="chat-input" class="form-control bg-transparent border-0 text-white" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviarMensaje()">
-      <button class="btn text-info border-0" onclick="enviarMensaje()"><i class="fas fa-paper-plane"></i></button>
+    <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center bg-dark">
+        <h6 class="m-0 fw-bold small"><i class="fas fa-comment text-info me-2"></i> <span id="chat-title">General</span></h6>
+        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
     </div>
-  </div>
+    <div id="chat-messages" class="flex-grow-1 p-3"></div>
+    <div class="p-2 border-top border-white border-opacity-10 bg-dark">
+        <div class="input-group input-group-sm">
+            <input type="text" id="chat-input" class="form-control bg-transparent border-0 text-white" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviarMensaje()">
+            <button class="btn text-info border-0" onclick="enviarMensaje()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
 </div>
 
 <button onclick="toggleChat()" class="btn btn-success shadow-lg rounded-circle" style="position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; z-index: 1001;">
-  <i class="fas fa-comments fs-4"></i>
-  <span id="chat-notification" class="notification-badge"></span>
+    <i class="fas fa-comments fs-4"></i>
+    <span id="chat-notification" class="notification-badge"></span>
 </button>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
-  const socket = io();
-  const userNombre = "<%= user.nombre %>";
-  const userRol = "<%= user.rol %>";
-  let chatActual = null;
+    const socket = io();
+    const userNombre = "<%= user.nombre %>";
+    const userRol = "<%= user.rol %>";
+    let chatActual = null;
 
-  window.onload = () => {
-    const hoy = new Date().toISOString().split('T')[0];
-    const datePicker = document.getElementById('main-date-picker');
-    if(datePicker) {
-      datePicker.value = hoy;
-      filterMatchesByDate(hoy);
-    }
-    cargarMensajes();
-  };
+    window.onload = () => {
+        const hoy = new Date().toISOString().split('T')[0];
+        const datePicker = document.getElementById('main-date-picker');
+        if(datePicker) {
+            datePicker.value = hoy;
+            filterMatchesByDate(hoy);
+        }
+        cargarMensajes();
+    };
 
-  function setChat(id, titulo) {
-    chatActual = id;
-    const chatTitle = document.getElementById('chat-title');
-    const chatContainer = document.getElementById('chat-container');
-    const notif = document.getElementById('chat-notification');
+    function setChat(id, titulo) {
+        chatActual = id;
+        const chatTitle = document.getElementById('chat-title');
+        const chatContainer = document.getElementById('chat-container');
+        const notif = document.getElementById('chat-notification');
 
-    if(chatTitle) chatTitle.innerText = titulo;
-    if(chatContainer) chatContainer.style.display = 'flex';
-    if(notif) notif.style.display = 'none';
-    cargarMensajes();
-  }
-
-  function filterMatchesByDate(selectedDate) {
-    const items = document.querySelectorAll('.match-item');
-    let countApostados = 0;
-    let countDisponibles = 0;
-
-    items.forEach(item => {
-      const isVisible = item.getAttribute('data-date') === selectedDate;
-      if (isVisible) {
-        item.classList.remove('partido-hidden');
-        // Contamos en qué sección está el partido visible
-        if (item.closest('#mis-apuestas-container')) countApostados++;
-        if (item.closest('#disponibles-container')) countDisponibles++;
-      } else {
-        item.classList.add('partido-hidden');
-      }
-    });
-
-    // Manejo del mensaje de "No tienes apuestas"
-    const noApuestasMsg = document.getElementById('no-apuestas-msg');
-    if (noApuestasMsg) {
-      if (countApostados === 0) {
-        noApuestasMsg.style.display = 'block';
-        noApuestasMsg.classList.remove('partido-hidden');
-        noApuestasMsg.innerText = "No tienes apuestas para el día " + selectedDate;
-      } else {
-        noApuestasMsg.style.display = 'none';
-        noApuestasMsg.classList.add('partido-hidden');
-      }
+        if(chatTitle) chatTitle.innerText = titulo;
+        if(chatContainer) chatContainer.style.display = 'flex';
+        if(notif) notif.style.display = 'none';
+        cargarMensajes();
     }
 
-    // Opcional: Si quieres un mensaje similar para la lista de disponibles
-    const disponiblesCont = document.getElementById('disponibles-container');
-    if (disponiblesCont && countDisponibles === 0) {
-      // Podrías añadir un feedback visual aquí si lo deseas
-      console.log("No hay partidos disponibles para esta fecha.");
-    }
-  }
-  function setQuickDate(daysToAdd) {
-    const d = new Date();
-    d.setDate(d.getDate() + daysToAdd);
-    const iso = d.toISOString().split('T')[0];
-    document.getElementById('main-date-picker').value = iso;
-    filterMatchesByDate(iso);
-  }
+    function filterMatchesByDate(selectedDate) {
+        const items = document.querySelectorAll('.match-item');
+        let countApostados = 0;
+        let countDisponibles = 0;
 
-  // --- LÓGICA DE APUESTAS ACTUALIZADA (Maneja sesión expirada) ---
-  document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('button');
-      const card = form.closest('.glass-card');
-      const formData = new FormData(form);
-
-      const id_partido = formData.get('id_partido');
-      const goles_a = formData.get('goles_a');
-      const goles_b = formData.get('goles_b');
-      const cantidad = formData.get('apostado');
-
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-      try {
-        const res = await fetch('/apostar', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest' // Importante para que Express detecte req.xhr
-          },
-          body: JSON.stringify({ id_partido, goles_a, goles_b, apostado: cantidad })
+        items.forEach(item => {
+            const isVisible = item.getAttribute('data-date') === selectedDate;
+            if (isVisible) {
+                item.classList.remove('partido-hidden');
+                if (item.closest('#mis-apuestas-container')) countApostados++;
+                if (item.closest('#disponibles-container')) countDisponibles++;
+            } else {
+                item.classList.add('partido-hidden');
+            }
         });
 
-        // Si el servidor dice que la sesión expiró (401)
-        if (res.status === 401) {
-          const data = await res.json();
-          window.location.href = data.redirect || '/login';
-          return;
+        const noApuestasMsg = document.getElementById('no-apuestas-msg');
+        if (noApuestasMsg) {
+            if (countApostados === 0) {
+                noApuestasMsg.style.display = 'block';
+                noApuestasMsg.classList.remove('partido-hidden');
+                noApuestasMsg.innerText = "No tienes apuestas para el día " + selectedDate;
+            } else {
+                noApuestasMsg.style.display = 'none';
+                noApuestasMsg.classList.add('partido-hidden');
+            }
         }
 
-        const result = await res.json();
+        const disponiblesCont = document.getElementById('disponibles-container');
+        if (disponiblesCont && countDisponibles === 0) {
+            console.log("No hay partidos disponibles para esta fecha.");
+        }
+    }
+    function setQuickDate(daysToAdd) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysToAdd);
+        const iso = d.toISOString().split('T')[0];
+        document.getElementById('main-date-picker').value = iso;
+        filterMatchesByDate(iso);
+    }
 
-        if (res.ok) {
-          const saldoTop = document.getElementById('user-creditos-top');
-          if (saldoTop && result.nuevoSaldo !== undefined) {
-            saldoTop.innerText = result.nuevoSaldo;
-          }
+    document.querySelectorAll('.form-apuesta-ajax').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = form.querySelector('button');
+            const card = form.closest('.glass-card');
+            const formData = new FormData(form);
 
-          const parent = form.parentElement;
-          form.remove();
+            const id_partido = formData.get('id_partido');
+            const goles_a = formData.get('goles_a');
+            const goles_b = formData.get('goles_b');
+            const cantidad = formData.get('apostado');
 
-          const apuestaInfo = document.createElement('div');
-          apuestaInfo.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success';
-          apuestaInfo.innerHTML = `
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const res = await fetch('/apostar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ id_partido, goles_a, goles_b, apostado: cantidad })
+                });
+
+                if (res.status === 401) {
+                    const data = await res.json();
+                    window.location.href = data.redirect || '/login';
+                    return;
+                }
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    const saldoTop = document.getElementById('user-creditos-top');
+                    if (saldoTop && result.nuevoSaldo !== undefined) {
+                        saldoTop.innerText = result.nuevoSaldo;
+                    }
+
+                    const parent = form.parentElement;
+                    form.remove();
+
+                    const apuestaInfo = document.createElement('div');
+                    apuestaInfo.className = 'text-center py-2 rounded-3 bg-white shadow-sm border border-success';
+                    apuestaInfo.innerHTML = `
             <span class="text-dark small fw-bold text-uppercase">Tu Apuesta: ${goles_a} - ${goles_b}</span>
-            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(${cantidad} GmC)</div>
+            <div class="text-dark fw-bold small" style="font-size: 0.6rem;">(${amount} GmC)</div>
           `;
-          parent.appendChild(apuestaInfo);
+                    parent.appendChild(apuestaInfo);
 
-          const misApuestasCont = document.getElementById('mis-apuestas-container');
-          const noMsg = document.getElementById('no-apuestas-msg');
-          if (noMsg) noMsg.style.display = 'none';
+                    const misApuestasCont = document.getElementById('mis-apuestas-container');
+                    const noMsg = document.getElementById('no-apuestas-msg');
+                    if (noMsg) noMsg.style.display = 'none';
 
-          card.classList.add('border-success');
-          misApuestasCont.prepend(card);
-        } else {
-          alert(result.error || "Error al apostar");
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-check"></i>';
-        }
-      } catch (e) {
-        console.error("Error:", e);
-        alert("Error de conexión con el servidor.");
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
-      }
+                    card.classList.add('border-success');
+                    misApuestasCont.prepend(card);
+                } else {
+                    alert(result.error || "Error al apostar");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i>';
+                }
+            } catch (e) {
+                console.error("Error:", e);
+                alert("Error de conexión con el servidor.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+            }
+        });
     });
-  });
 
-  // MODERACIÓN Y CHAT
-  function renderSingleMessage(m) {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-    const isMe = m.usuario === userNombre;
-    const isModerator = (userRol === 'admin' || userRol === 'moderador');
+    function renderSingleMessage(m) {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+        const isMe = m.usuario === userNombre;
+        const isModerator = (userRol === 'admin' || userRol === 'moderador');
 
-    const div = document.createElement('div');
-    div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
-    div.id = `msg-${m.id}`;
+        const div = document.createElement('div');
+        div.className = `msg ${isMe ? 'msg-me' : 'msg-others'}`;
+        div.id = `msg-${m.id}`;
 
-    let html = `<span class="msg-user">${m.usuario}</span><div>${m.mensaje}</div>`;
+        let html = `<span class="msg-user">${m.usuario}</span><div>${m.mensaje}</div>`;
 
-    if (isModerator) {
-      html += `
+        if (isModerator) {
+            html += `
         <div class="mt-1 d-flex">
           <button onclick="eliminarMensajeLive('${m.id}')" class="btn-mod-action btn-mod-del" title="Eliminar"><i class="fas fa-trash"></i></button>
           ${!isMe ? `<button onclick="banearUsuarioLive('${m.usuario}')" class="btn-mod-action btn-mod-ban" title="Banear"><i class="fas fa-user-slash"></i></button>` : ''}
         </div>`;
+        }
+
+        div.innerHTML = html;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
     }
 
-    div.innerHTML = html;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-  }
+    async function eliminarMensajeLive(id) {
+        if(!confirm("¿Deseas eliminar este mensaje?")) return;
+        await fetch('/chat/borrar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id_mensaje: id })
+        });
+    }
 
-  async function eliminarMensajeLive(id) {
-    if(!confirm("¿Deseas eliminar este mensaje?")) return;
-    await fetch('/chat/borrar', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ id_mensaje: id })
+    async function banearUsuarioLive(nombre) {
+        const mins = prompt(`¿Cuántos minutos deseas banear a ${nombre}?`, "1440");
+        if(!mins) return;
+        try {
+            const res = await fetch('/admin/banear-usuario', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nombre: nombre, minutos: parseInt(mins) })
+            });
+            const data = await res.json();
+            alert(data.mensaje || data.error);
+        } catch(e) { alert("Error en la petición de baneo"); }
+    }
+
+    async function cargarMensajes() {
+        const container = document.getElementById('chat-messages');
+        if(!container) return;
+        container.innerHTML = '<div class="text-center opacity-50 small mt-2">Cargando historial...</div>';
+
+        try {
+            const res = await fetch(`/chat/${chatActual || ''}`);
+            const mensajes = await res.json();
+            container.innerHTML = '';
+            if(mensajes.length === 0) {
+                container.innerHTML = '<div class="text-center opacity-50 small mt-2">No hay mensajes.</div>';
+            }
+            mensajes.forEach(renderSingleMessage);
+        } catch (e) {
+            container.innerHTML = '<div class="text-center text-danger small mt-2">Error al cargar mensajes.</div>';
+        }
+    }
+
+    function toggleChat() {
+        const chat = document.getElementById('chat-container');
+        const notif = document.getElementById('chat-notification');
+        if(!chat) return;
+        const isHidden = chat.style.display === 'none' || !chat.style.display;
+        chat.style.display = isHidden ? 'flex' : 'none';
+
+        if(isHidden) {
+            cargarMensajes();
+            if(notif) notif.style.display = 'none';
+        }
+    }
+
+    async function enviarMensaje() {
+        const input = document.getElementById('chat-input');
+        const texto = input.value.trim();
+        if(!texto) return;
+
+        try {
+            const res = await fetch('/chat/enviar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ mensaje: texto, id_partido: chatActual })
+            });
+            if(res.ok) {
+                input.value = '';
+            } else {
+                const err = await res.json();
+                alert(err.error || "No se pudo enviar");
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    socket.on('nuevo_mensaje', (m) => {
+        const chatContainer = document.getElementById('chat-container');
+        const notif = document.getElementById('chat-notification');
+        const isOpen = chatContainer && chatContainer.style.display === 'flex';
+
+        if (String(m.id_partido) === String(chatActual) || (m.id_partido === null && chatActual === null)) {
+            renderSingleMessage(m);
+        }
+
+        if (!isOpen || String(m.id_partido) !== String(chatActual)) {
+            if(notif) notif.style.display = 'block';
+        }
     });
-  }
 
-  async function banearUsuarioLive(nombre) {
-    const mins = prompt(`¿Cuántos minutos deseas banear a ${nombre}?`, "1440");
-    if(!mins) return;
-    try {
-      const res = await fetch('/admin/banear-usuario', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ nombre: nombre, minutos: parseInt(mins) })
-      });
-      const data = await res.json();
-      alert(data.mensaje || data.error);
-    } catch(e) { alert("Error en la petición de baneo"); }
-  }
+    socket.on('mensaje_eliminado_en_vivo', (id) => {
+        const el = document.getElementById(`msg-${id}`);
+        if(el) el.remove();
+    });
 
-  async function cargarMensajes() {
-    const container = document.getElementById('chat-messages');
-    if(!container) return;
-    container.innerHTML = '<div class="text-center opacity-50 small mt-2">Cargando historial...</div>';
-
-    try {
-      const res = await fetch(`/chat/${chatActual || ''}`);
-      const mensajes = await res.json();
-      container.innerHTML = '';
-      if(mensajes.length === 0) {
-        container.innerHTML = '<div class="text-center opacity-50 small mt-2">No hay mensajes.</div>';
-      }
-      mensajes.forEach(renderSingleMessage);
-    } catch (e) {
-      container.innerHTML = '<div class="text-center text-danger small mt-2">Error al cargar mensajes.</div>';
-    }
-  }
-
-  function toggleChat() {
-    const chat = document.getElementById('chat-container');
-    const notif = document.getElementById('chat-notification');
-    if(!chat) return;
-    const isHidden = chat.style.display === 'none' || !chat.style.display;
-    chat.style.display = isHidden ? 'flex' : 'none';
-
-    if(isHidden) {
-      cargarMensajes();
-      if(notif) notif.style.display = 'none';
-    }
-  }
-
-  async function enviarMensaje() {
-    const input = document.getElementById('chat-input');
-    const texto = input.value.trim();
-    if(!texto) return;
-
-    try {
-      const res = await fetch('/chat/enviar', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ mensaje: texto, id_partido: chatActual })
-      });
-      if(res.ok) {
-        input.value = '';
-      } else {
-        const err = await res.json();
-        alert(err.error || "No se pudo enviar");
-      }
-    } catch (e) { alert("Error de conexión"); }
-  }
-
-  // SOCKETS
-  socket.on('nuevo_mensaje', (m) => {
-    const chatContainer = document.getElementById('chat-container');
-    const notif = document.getElementById('chat-notification');
-    const isOpen = chatContainer && chatContainer.style.display === 'flex';
-
-    if (String(m.id_partido) === String(chatActual) || (m.id_partido === null && chatActual === null)) {
-      renderSingleMessage(m);
-    }
-
-    if (!isOpen || String(m.id_partido) !== String(chatActual)) {
-      if(notif) notif.style.display = 'block';
-    }
-  });
-
-  socket.on('mensaje_eliminado_en_vivo', (id) => {
-    const el = document.getElementById(`msg-${id}`);
-    if(el) el.remove();
-  });
-
-  socket.on('actualizar_bolsa_live', (data) => {
-    const el = document.querySelector(`.bolsa-partido-${data.id_partido}`);
-    if(el) el.innerText = `${data.nuevo_total} GmC`;
-  });
+    socket.on('actualizar_bolsa_live', (data) => {
+        const el = document.querySelector(`.bolsa-partido-${data.id_partido}`);
+        if(el) el.innerText = `${data.nuevo_total} GmC`;
+    });
 
 </script>
 </body>
