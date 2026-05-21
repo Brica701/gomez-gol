@@ -8,13 +8,9 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const rA = parseInt(realA);
     const rB = parseInt(realB);
 
-    // Pleno: resultado exacto
     if (aA === rA && aB === rB) return 3;
-
-    // Empate: acertar que quedan igual aunque no sea el número de goles
     if (aA === aB && rA === rB) return 1;
 
-    // Tendencia: acertar quién gana
     const tendenciaApuesta = aA > aB ? 'A' : (aA < aB ? 'B' : 'E');
     const tendenciaReal = rA > rB ? 'A' : (rA < rB ? 'B' : 'E');
 
@@ -25,7 +21,6 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
 async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
     console.log(`💰 Iniciando reparto de premios para el partido ${id_partido}...`);
     try {
-        // Obtenemos el bote total (80% repartible)
         const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
         const boteTotal = parseInt(resBote.rows[0].total) || 0;
 
@@ -39,7 +34,6 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
         for (let ap of resApuestas.rows) {
             const puntos = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
 
-            // Gestión de Rachas
             let rachaData = await db.query('SELECT racha_exacta, racha_ganador FROM rachas WHERE usuario_nombre = $1', [ap.usuario]);
             if (rachaData.rows.length === 0) {
                 await db.query('INSERT INTO rachas (usuario_nombre, racha_exacta, racha_ganador) VALUES ($1, 0, 0)', [ap.usuario]);
@@ -62,7 +56,6 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
                 racha_ganador = 0;
             }
 
-            // Actualizar rachas, puntos y créditos (bonus de racha)
             await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = $2 WHERE usuario_nombre = $3', [racha_exacta, racha_ganador, ap.usuario]);
             await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = $2 WHERE id = $3', [puntos, bonusGarantizado, ap.id]);
             await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntos, bonusGarantizado, ap.usuario]);
@@ -76,7 +69,6 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
             }
         }
 
-        // Reparto proporcional del Bote (80% del total apostado)
         if (boteTotal > 0) {
             const boteRepartible = Math.floor(boteTotal * 0.80);
 
@@ -109,7 +101,7 @@ async function sincronizarPartidos() {
     try {
         const hoy = new Date();
         const fechaInicio = new Date(hoy);
-        fechaInicio.setDate(hoy.getDate() - 1);
+        fechaInicio.setDate(hoy.getDate() - 2); // Ampliamos a 2 días atrás por si acaso
 
         const fechaFin = new Date(hoy);
         fechaFin.setDate(hoy.getDate() + 2);
@@ -129,7 +121,6 @@ async function sincronizarPartidos() {
         for (const p of partidos) {
             const id_externo = p.id.toString();
 
-            // Consultamos el estado actual en nuestra BD antes de actualizar
             const estadoPrevioRes = await db.query('SELECT estado FROM partidos WHERE id = $1', [id_externo]);
             const estadoPrevio = estadoPrevioRes.rows.length > 0 ? estadoPrevioRes.rows[0].estado : null;
 
@@ -137,34 +128,16 @@ async function sincronizarPartidos() {
             const goles_b = p.score.fullTime.away ?? 0;
 
             let estadoFinal = 'abierto';
-            let isEnVivo = 0;
-            let isBloqueado = 0;
+            if (p.status === 'FINISHED' || p.status === 'AWARDED') estadoFinal = 'finalizado';
+            if (p.status === 'IN_PLAY' || p.status === 'LIVE' || p.status === 'PAUSED') estadoFinal = 'en_vivo';
 
-            if (p.status === 'FINISHED' || p.status === 'AWARDED') {
-                estadoFinal = 'finalizado';
-                isEnVivo = 0;
-                isBloqueado = 1; // Ya no se puede apostar
-            } else if (p.status === 'IN_PLAY' || p.status === 'LIVE' || p.status === 'PAUSED') {
-                estadoFinal = 'en_vivo';
-                isEnVivo = 1;
-                isBloqueado = 1; // Tampoco se puede apostar si está en juego
-            } else if (p.status === 'TIMED' || p.status === 'SCHEDULED') {
-                // Si falta poco para que empiece, podrías bloquearlo aquí, de momento sigue abierto
-                estadoFinal = 'abierto';
-                isEnVivo = 0;
-                isBloqueado = 0;
-            }
-
-            // Actualizamos o insertamos el partido sincronizando los estados de la API con los flags del Front
             await db.query(`
-                INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado, en_vivo, bloqueado)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     ON CONFLICT (id) DO UPDATE SET
                     resultado_a = EXCLUDED.resultado_a,
                                             resultado_b = EXCLUDED.resultado_b,
                                             estado = EXCLUDED.estado,
-                                            en_vivo = EXCLUDED.en_vivo,
-                                            bloqueado = EXCLUDED.bloqueado,
                                             fecha_partido = EXCLUDED.fecha_partido,
                                             id_api_a = EXCLUDED.id_api_a,
                                             id_api_b = EXCLUDED.id_api_b;
@@ -177,12 +150,10 @@ async function sincronizarPartidos() {
                 p.utcDate,
                 goles_a,
                 goles_b,
-                estadoFinal,
-                isEnVivo,     // $10 -> en_vivo
-                isBloqueado   // $11 -> bloqueado
+                estadoFinal
             ]);
 
-            // 🔥 DETECCIÓN DE CIERRE AUTOMÁTICO 🔥
+            // Si el partido acaba de finalizar en la API, hacemos reparto automático
             if (estadoFinal === 'finalizado' && estadoPrevio !== 'finalizado') {
                 await ejecutarRepartoAutomatico(id_externo, goles_a, goles_b);
             }
