@@ -101,7 +101,9 @@ async function sincronizarPartidos() {
     try {
         const hoy = new Date();
         const fechaInicio = new Date(hoy);
-        fechaInicio.setDate(hoy.getDate() - 2); // Ampliamos a 2 días atrás por si acaso
+
+        // Ponemos 4 días de margen atrás para que Render pesque todo al despertar de madrugada
+        fechaInicio.setDate(hoy.getDate() - 4);
 
         const fechaFin = new Date(hoy);
         fechaFin.setDate(hoy.getDate() + 2);
