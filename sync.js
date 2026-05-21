@@ -129,20 +129,38 @@ async function sincronizarPartidos() {
             const goles_a = p.score.fullTime.home ?? 0;
             const goles_b = p.score.fullTime.away ?? 0;
 
+            // --- MANEJO AVANZADO DE ESTADOS DE LA API ---
             let estadoFinal = 'abierto';
-            if (p.status === 'FINISHED' || p.status === 'AWARDED') estadoFinal = 'finalizado';
-            if (p.status === 'IN_PLAY' || p.status === 'LIVE' || p.status === 'PAUSED') estadoFinal = 'en_vivo';
+
+            if (p.status === 'FINISHED' || p.status === 'AWARDED') {
+                estadoFinal = 'finalizado';
+            } else if (p.status === 'IN_PLAY' || p.status === 'LIVE' || p.status === 'PAUSED') {
+                estadoFinal = 'en_vivo';
+            } else if (p.status === 'TIMED' || p.status === 'SCHEDULED') {
+                // Si la fecha programada del partido ya pasó respecto a la hora UTC actual,
+                // significa que concluyó y lo controlamos como finalizado de forma segura.
+                const ahoraUTC = new Date();
+                const fechaPartido = new Date(p.utcDate);
+                if (fechaPartido < ahoraUTC) {
+                    estadoFinal = 'finalizado';
+                } else {
+                    estadoFinal = 'abierto';
+                }
+            } else {
+                // Para estados alternativos como POSTPONED o SUSPENDED cerramos el mercado
+                estadoFinal = 'cerrado';
+            }
 
             await db.query(`
                 INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     ON CONFLICT (id) DO UPDATE SET
                     resultado_a = EXCLUDED.resultado_a,
-                                            resultado_b = EXCLUDED.resultado_b,
-                                            estado = EXCLUDED.estado,
-                                            fecha_partido = EXCLUDED.fecha_partido,
-                                            id_api_a = EXCLUDED.id_api_a,
-                                            id_api_b = EXCLUDED.id_api_b;
+                    resultado_b = EXCLUDED.resultado_b,
+                    estado = EXCLUDED.estado,
+                    fecha_partido = EXCLUDED.fecha_partido,
+                    id_api_a = EXCLUDED.id_api_a,
+                    id_api_b = EXCLUDED.id_api_b;
             `, [
                 id_externo,
                 p.homeTeam.shortName || p.homeTeam.name,
@@ -155,7 +173,7 @@ async function sincronizarPartidos() {
                 estadoFinal
             ]);
 
-            // Si el partido acaba de finalizar en la API, hacemos reparto automático
+            // Si el partido acaba de finalizar en la API o fue forzado por tiempo, hacemos reparto automático
             if (estadoFinal === 'finalizado' && estadoPrevio !== 'finalizado') {
                 await ejecutarRepartoAutomatico(id_externo, goles_a, goles_b);
             }

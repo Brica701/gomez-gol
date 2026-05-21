@@ -6,11 +6,10 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-// --- MIDDLEWARE DE PROTECCIÓN (Corregido para evitar redirecciones en AJAX) ---
+// --- MIDDLEWARE DE PROTECCIÓN ---
 function isAuthenticated(req, res, next) {
     if (req.session && req.session.userNombre) return next();
 
-    // Si es AJAX o espera JSON, devolvemos 401 en lugar de redireccionar
     if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
         return res.status(401).json({
             error: "Sesión expirada",
@@ -37,10 +36,8 @@ function isAdmin(req, res, next) {
     res.redirect('/?error=' + encodeURIComponent("No tienes permisos de administrador"));
 }
 
-// --- UTILIDADES DE PUNTUACIÓN (3, 2, 1) ---
+// --- UTILIDADES DE PUNTUACIÓN UNIFICADA (3, 2, 1) ---
 function calcularPuntos(apuestaA, apuestaB, realA, realB) {
-    if (realA === null || realB === null) return 0;
-
     const aA = parseInt(apuestaA);
     const aB = parseInt(apuestaB);
     const rA = parseInt(realA);
@@ -52,9 +49,7 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const tendenciaApuesta = aA > aB ? 'A' : (aA < aB ? 'B' : 'E');
     const tendenciaReal = rA > rB ? 'A' : (rA < rB ? 'B' : 'E');
 
-    if (tendenciaApuesta === tendenciaReal) return 2;
-
-    return 0;
+    return (tendenciaApuesta === tendenciaReal) ? 2 : 0;
 }
 
 // --- RUTAS DE ACCESO ---
@@ -68,7 +63,6 @@ router.post('/login', async (req, res) => {
         const rows = result.rows;
         if (rows.length > 0) {
             const user = rows[0];
-            // Bypass para administrador principal
             if (password === 'admin' && nombre === 'Isaac') {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
@@ -159,7 +153,6 @@ router.get('/', isAuthenticated, async (req, res) => {
 
         if (userData[0].debe_cambiar_pass === true || userData[0].debe_cambiar_pass === 1) return res.redirect('/cambiar-password');
 
-        // Mapeamos dinámicamente 'bloqueado' y 'en_vivo' basándonos únicamente en la columna de texto 'estado' de tu BD real
         const partidosRes = await db.query(`
             SELECT p.*,
                    (SELECT SUM(apostado) FROM apuestas WHERE id_partido = p.id) as total_apostado,
@@ -209,7 +202,7 @@ router.get('/', isAuthenticated, async (req, res) => {
     }
 });
 
-// --- REGISTRO DE APUESTAS (Mejorado para AJAX sin 302) ---
+// --- REGISTRO DE APUESTAS ---
 router.post('/apostar', isAuthenticated, async (req, res) => {
     const { id_partido, goles_a, goles_b, apostado } = req.body;
     const usuario = req.session.userNombre;
@@ -236,7 +229,7 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
 
         const ahora = new Date();
         const horaPartido = new Date(partidoRes.rows[0].fecha_partido);
-        const diffMinutos = (horaPartido - ahora) / 60000;
+        const diffMinutos = (horaPartido - abrió) / 60000;
 
         if (partidoRes.rows[0].estado !== 'abierto') {
             return responderError("Las apuestas están cerradas.");
@@ -245,8 +238,7 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             return responderError("Bloqueado: Faltan menos de 10 min.");
         }
 
-        // Ejecución de la apuesta
-        await db.query('UPDATE usuarios SET creditos = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
+        await db.query('UPDATE usuarios SET credited = creditos - $1 WHERE nombre = $2', [cantidadApostada, usuario]);
         await db.query(`INSERT INTO apuestas (usuario, id_partido, goles_a, goles_b, apostado) VALUES ($1, $2, $3, $4, $5)`,
             [usuario, id_partido, goles_a, goles_b, cantidadApostada]);
 
@@ -256,7 +248,6 @@ router.post('/apostar', isAuthenticated, async (req, res) => {
             req.app.get('socketio').emit('actualizar_bolsa_live', { id_partido, nuevo_total: resNuevoTotal.rows[0].total || 0 });
         }
 
-        // Respuesta final optimizada
         if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
             return res.json({
                 success: true,
@@ -323,7 +314,7 @@ router.post('/admin/partidos/delete', isAuthenticated, isAdmin, async (req, res)
     }
 });
 
-// --- FINALIZAR PARTIDO Y REPARTO ---
+// --- FINALIZAR PARTIDO MANUAL (EVITA DOBLE REPARTO CON EL SYNC) ---
 router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, res) => {
     const { id_partido, resultado_a, resultado_b } = req.body;
     const resA = parseInt(resultado_a);
@@ -332,73 +323,83 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
     if (isNaN(resA) || isNaN(resB)) return res.redirect(`/admin?error=Resultados inválidos`);
 
     try {
+        // Obtenemos el estado previo para saber si ya estaba finalizado
+        const estadoPrevioRes = await db.query('SELECT estado FROM partidos WHERE id = $1', [id_partido]);
+        if (estadoPrevioRes.rows.length === 0) return res.redirect(`/admin?error=Partido no encontrado`);
+
+        const estadoPrevio = estadoPrevioRes.rows[0].estado;
+
+        // 1. Guardamos el resultado real y forzamos a 'finalizado' en la base de datos
         await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resA, resB, id_partido]);
 
-        const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
-        const boteTotal = parseInt(resBote.rows[0].total) || 0;
+        // 2. Ejecutamos la lógica de reparto de botes y puntos de forma limpia si no estaba cerrado antes
+        if (estadoPrevio !== 'finalizado') {
+            const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
+            const boteTotal = parseInt(resBote.rows[0].total) || 0;
 
-        const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
-        const apuestas = resApuestas.rows;
+            const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
+            const apuestas = resApuestas.rows;
 
-        let ganadoresPleno = [];
-        let ganadoresTendencia = [];
-        let totalApostadoPleno = 0;
-        let totalApostadoTendencia = 0;
+            let ganadoresPleno = [];
+            let ganadoresTendencia = [];
+            let totalApostadoPleno = 0;
+            let totalApostadoTendencia = 0;
 
-        for (let ap of apuestas) {
-            const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
+            for (let ap of apuestas) {
+                const puntosFinales = calcularPuntos(ap.goles_a, ap.goles_b, resA, resB);
 
-            let rachaData = await db.query('SELECT racha_exacta, racha_ganador FROM rachas WHERE usuario_nombre = $1', [ap.usuario]);
-            if (rachaData.rows.length === 0) {
-                await db.query('INSERT INTO rachas (usuario_nombre, racha_exacta, racha_ganador) VALUES ($1, 0, 0)', [ap.usuario]);
-                rachaData = { rows: [{ racha_exacta: 0, racha_ganador: 0 }] };
-            }
+                let rachaData = await db.query('SELECT racha_exacta, racha_ganador FROM rachas WHERE usuario_nombre = $1', [ap.usuario]);
+                if (rachaData.rows.length === 0) {
+                    await db.query('INSERT INTO rachas (usuario_nombre, racha_exacta, racha_ganador) VALUES ($1, 0, 0)', [ap.usuario]);
+                    rachaData = { rows: [{ racha_exacta: 0, racha_ganador: 0 }] };
+                }
 
-            let { racha_exacta, racha_ganador } = rachaData.rows[0];
-            let bonusGarantizado = 0;
+                let { racha_exacta, racha_ganador } = rachaData.rows[0];
+                let bonusGarantizado = 0;
 
-            if (puntosFinales === 3) {
-                racha_exacta += 1;
-                racha_ganador += 1;
-                if (racha_exacta >= 2) bonusGarantizado = racha_exacta * 100;
-            } else if (puntosFinales >= 1) {
-                racha_ganador += 1;
-                racha_exacta = 0;
-                if (racha_ganador >= 2) bonusGarantizado = racha_ganador * 50;
-            } else {
-                racha_exacta = 0;
-                racha_ganador = 0;
-            }
+                if (puntosFinales === 3) {
+                    racha_exacta += 1;
+                    racha_ganador += 1;
+                    if (racha_exacta >= 2) bonusGarantizado = racha_exacta * 100;
+                } else if (puntosFinales >= 1) {
+                    racha_ganador += 1;
+                    racha_exacta = 0;
+                    if (racha_ganador >= 2) bonusGarantizado = racha_ganador * 50;
+                } else {
+                    racha_exacta = 0;
+                    racha_ganador = 0;
+                }
 
-            await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = $2 WHERE usuario_nombre = $3', [racha_exacta, racha_ganador, ap.usuario]);
-            await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
-            await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntosFinales, bonusGarantizado, ap.usuario]);
+                await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = $2 WHERE usuario_nombre = $3', [racha_exacta, racha_ganador, ap.usuario]);
+                await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
+                await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntosFinales, bonusGarantizado, ap.usuario]);
 
-            if (puntosFinales === 3) {
-                ganadoresPleno.push(ap);
-                totalApostadoPleno += parseInt(ap.apostado);
-            } else if (puntosFinales >= 1) {
-                ganadoresTendencia.push(ap);
-                totalApostadoTendencia += parseInt(ap.apostado);
-            }
-        }
-
-        if (boteTotal > 0) {
-            const boteRepartible = Math.floor(boteTotal * 0.80);
-            if (ganadoresPleno.length > 0) {
-                const bolsaPleno = ganadoresTendencia.length > 0 ? boteRepartible * 0.70 : boteRepartible;
-                for (let g of ganadoresPleno) {
-                    let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
-                    await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
+                if (puntosFinales === 3) {
+                    ganadoresPleno.push(ap);
+                    totalApostadoPleno += parseInt(ap.apostado);
+                } else if (puntosFinales >= 1) {
+                    ganadoresTendencia.push(ap);
+                    totalApostadoTendencia += parseInt(ap.apostado);
                 }
             }
-            if (ganadoresTendencia.length > 0) {
-                const bolsaTendencia = ganadoresPleno.length > 0 ? boteRepartible * 0.30 : boteRepartible;
-                for (let t of ganadoresTendencia) {
-                    let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
-                    await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
-                    await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
+
+            if (boteTotal > 0) {
+                const boteRepartible = Math.floor(boteTotal * 0.80);
+                if (ganadoresPleno.length > 0) {
+                    const bolsaPleno = ganadoresTendencia.length > 0 ? boteRepartible * 0.70 : boteRepartible;
+                    for (let g of ganadoresPleno) {
+                        let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
+                        await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, g.usuario]);
+                        await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, g.id]);
+                    }
+                }
+                if (ganadoresTendencia.length > 0) {
+                    const bolsaTendencia = ganadoresPleno.length > 0 ? boteRepartible * 0.30 : boteRepartible;
+                    for (let t of ganadoresTendencia) {
+                        let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
+                        await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [suParte, t.usuario]);
+                        await db.query('UPDATE apuestas SET premio_monedas = premio_monedas + $1 WHERE id = $2', [suParte, t.id]);
+                    }
                 }
             }
         }
@@ -406,7 +407,7 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         if (req.app.get('socketio')) {
             req.app.get('socketio').emit('partido_finalizado_live', { id_partido, resultado_a: resA, resultado_b: resB });
         }
-        res.redirect(`/admin?success=Partido finalizado y puntos repartidos`);
+        res.redirect(`/admin?success=Partido finalizado de forma segura`);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
