@@ -81,7 +81,6 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
             const boteRepartible = Math.floor(boteTotal * 0.80);
 
             if (ganadoresPleno.length > 0) {
-                // Si hay plenos, ellos se llevan el 70% de la bolsa repartible (o el 100% si no hay otros ganadores)
                 const bolsaPleno = ganadoresTendencia.length > 0 ? boteRepartible * 0.70 : boteRepartible;
                 for (let g of ganadoresPleno) {
                     let suParte = Math.floor((parseInt(g.apostado) / totalApostadoPleno) * bolsaPleno);
@@ -91,7 +90,6 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
             }
 
             if (ganadoresTendencia.length > 0) {
-                // Los de tendencia se llevan el 30% (o el 100% si no hay plenos)
                 const bolsaTendencia = ganadoresPleno.length > 0 ? boteRepartible * 0.30 : boteRepartible;
                 for (let t of ganadoresTendencia) {
                     let suParte = Math.floor((parseInt(t.apostado) / totalApostadoTendencia) * bolsaTendencia);
@@ -139,17 +137,34 @@ async function sincronizarPartidos() {
             const goles_b = p.score.fullTime.away ?? 0;
 
             let estadoFinal = 'abierto';
-            if (p.status === 'FINISHED' || p.status === 'AWARDED') estadoFinal = 'finalizado';
-            if (p.status === 'IN_PLAY' || p.status === 'LIVE') estadoFinal = 'en_vivo';
+            let isEnVivo = 0;
+            let isBloqueado = 0;
 
-            // Actualizamos o insertamos el partido (Editado para incluir IDs de escudos)
+            if (p.status === 'FINISHED' || p.status === 'AWARDED') {
+                estadoFinal = 'finalizado';
+                isEnVivo = 0;
+                isBloqueado = 1; // Ya no se puede apostar
+            } else if (p.status === 'IN_PLAY' || p.status === 'LIVE' || p.status === 'PAUSED') {
+                estadoFinal = 'en_vivo';
+                isEnVivo = 1;
+                isBloqueado = 1; // Tampoco se puede apostar si está en juego
+            } else if (p.status === 'TIMED' || p.status === 'SCHEDULED') {
+                // Si falta poco para que empiece, podrías bloquearlo aquí, de momento sigue abierto
+                estadoFinal = 'abierto';
+                isEnVivo = 0;
+                isBloqueado = 0;
+            }
+
+            // Actualizamos o insertamos el partido sincronizando los estados de la API con los flags del Front
             await db.query(`
-                INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado, en_vivo, bloqueado)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     ON CONFLICT (id) DO UPDATE SET
                     resultado_a = EXCLUDED.resultado_a,
                                             resultado_b = EXCLUDED.resultado_b,
                                             estado = EXCLUDED.estado,
+                                            en_vivo = EXCLUDED.en_vivo,
+                                            bloqueado = EXCLUDED.bloqueado,
                                             fecha_partido = EXCLUDED.fecha_partido,
                                             id_api_a = EXCLUDED.id_api_a,
                                             id_api_b = EXCLUDED.id_api_b;
@@ -157,16 +172,17 @@ async function sincronizarPartidos() {
                 id_externo,
                 p.homeTeam.shortName || p.homeTeam.name,
                 p.awayTeam.shortName || p.awayTeam.name,
-                p.homeTeam.id, // ID escudo local
-                p.awayTeam.id, // ID escudo visitante
+                p.homeTeam.id,
+                p.awayTeam.id,
                 p.utcDate,
                 goles_a,
                 goles_b,
-                estadoFinal
+                estadoFinal,
+                isEnVivo,     // $10 -> en_vivo
+                isBloqueado   // $11 -> bloqueado
             ]);
 
             // 🔥 DETECCIÓN DE CIERRE AUTOMÁTICO 🔥
-            // Si el partido acaba de pasar a 'finalizado', disparamos el reparto
             if (estadoFinal === 'finalizado' && estadoPrevio !== 'finalizado') {
                 await ejecutarRepartoAutomatico(id_externo, goles_a, goles_b);
             }
