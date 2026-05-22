@@ -25,7 +25,8 @@
             flex-direction: column;
         }
 
-        h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important; }
+        h4, h5, h6, span, label, div, td, th, a { color: #ffffff !important;
+        }
 
         .navbar {
             background: rgba(0, 0, 0, 0.8) !important;
@@ -63,7 +64,8 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
 
-        .partido-hidden { display: none !important; }
+        .partido-hidden { display: none !important;
+        }
 
         .streak-badge {
             background: rgba(255, 193, 7, 0.15);
@@ -95,8 +97,10 @@
             cursor: pointer;
             opacity: 0.9;
         }
-        .btn-mod-del { background: #dc3545; }
-        .btn-mod-ban { background: #343a40; }
+        .btn-mod-del { background: #dc3545;
+        }
+        .btn-mod-ban { background: #343a40;
+        }
 
         .partidos-grid {
             display: grid;
@@ -105,7 +109,8 @@
         }
 
         .vs-circle {
-            width: 32px; height: 32px; background: var(--primary-color);
+            width: 32px;
+            height: 32px; background: var(--primary-color);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-weight: 900; margin: 0 auto; font-size: 0.65rem;
         }
@@ -116,21 +121,30 @@
             color: #000000 !important; border-radius: 10px; text-align: center;
             font-weight: bold;
         }
-        .form-control-mobile::placeholder { color: #666; }
+        .form-control-mobile::placeholder { color: #666;
+        }
 
-        .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800; }
-        .btn-bet:disabled { background: #6c757d; opacity: 0.6; }
+        .btn-bet { background: var(--primary-color); border: none; border-radius: 10px; font-weight: 800;
+        }
+        .btn-bet:disabled { background: #6c757d; opacity: 0.6;
+        }
 
         #chat-container {
-            position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px;
+            position: fixed;
+            bottom: 90px; right: 20px; width: 350px; height: 500px;
             z-index: 1050; display: none; flex-direction: column;
             border-radius: 20px; overflow: hidden;
         }
-        #chat-messages { height: 390px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; }
-        .msg { max-width: 85%; padding: 8px 12px; border-radius: 15px; font-size: 0.85rem; position: relative; margin-bottom: 8px; color: white !important; }
-        .msg-others { align-self: flex-start; background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
-        .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px; }
-        .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8; color: #38bdf8 !important; }
+        #chat-messages { height: 390px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column;
+        }
+        .msg { max-width: 85%; padding: 8px 12px; border-radius: 15px; font-size: 0.85rem;
+            position: relative; margin-bottom: 8px; color: white !important; }
+        .msg-others { align-self: flex-start;
+            background: rgba(255,255,255,0.15); border-bottom-left-radius: 2px; }
+        .msg-me { align-self: flex-end; background: var(--primary-color); border-bottom-right-radius: 2px;
+        }
+        .msg-user { font-size: 0.65rem; font-weight: bold; display: block; opacity: 0.8;
+            color: #38bdf8 !important; }
 
         .footer-glass {
             background: rgba(0, 0, 0, 0.7);
@@ -181,8 +195,10 @@
         }
 
         @media (max-width: 576px) {
-            #chat-container { width: 94%; right: 3%; bottom: 80px; height: 75vh; }
-            .logo-container { width: 140px; height: 70px; }
+            #chat-container { width: 94%;
+                right: 3%; bottom: 80px; height: 75vh; }
+            .logo-container { width: 140px;
+                height: 70px; }
         }
 
         @media (max-width: 400px) {
@@ -202,6 +218,23 @@
                 padding-left: 6px !important;
                 padding-right: 6px !important;
             }
+        }
+
+        /* ANIMACIÓN PARA EL EFECTO PARPADEO DE LOS PARTIDOS EN VIVO */
+        .blink {
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.03); opacity: 1; }
+        }
+        .animate-pulse {
+            animation: borderPulse 2s infinite;
+        }
+        @keyframes borderPulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
     </style>
 </head>
@@ -270,11 +303,11 @@
                         horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
                     } catch(e) { console.error("Error fecha apuesta:", e); }
                 %>
-                <div class="card glass-card p-3 shadow-sm border-success partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
+                <div class="card glass-card p-3 shadow-sm <%= partido.estado === 'en_vivo' ? 'border-danger animate-pulse' : 'border-success' %> partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
-                        <% if (partido.en_vivo) { %>
-                            <span class="badge bg-danger text-white blink" style="font-size: 0.6rem;">EN CURSO</span>
+                        <% if (partido.estado === 'en_vivo') { %>
+                            <span class="badge bg-danger text-white blink" style="font-size: 0.6rem; letter-spacing: 1px; font-weight: 900;">🔴 EN VIVO</span>
                         <% } %>
                         <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
                     </div>
@@ -302,12 +335,15 @@
                 <% })} %>
             </div>
 
+
             <h5 class="mb-3 text-uppercase fw-bold opacity-75 small"><i class="fas fa-futbol me-2"></i> Partidos Disponibles</h5>
             <div id="disponibles-container" class="partidos-grid mb-5">
                 <%
                 let pendientes = partidos.filter(p => !apuestas_usuario.find(a => a.id_partido === p.id));
                 pendientes.forEach(partido => {
                     const isBloqueado = partido.bloqueado === 1;
+                    // CORREGIDO: Bloquear la tarjeta si el administrador lo cerro O si el estado en base de datos ya pasó a estar 'en_vivo'
+                    const isCerrado = isBloqueado || partido.estado === 'en_vivo';
 
                     let fISO = "";
                     let horaEsp = "00:00";
@@ -318,12 +354,16 @@
                         horaEsp = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit', hour12: false, timeZone: 'Europe/Madrid'});
                     } catch(e) { console.error("Error fecha disponible:", e); }
                 %>
-                <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isBloqueado ? 'opacity: 0.8;' : '' %>">
+                <div class="card glass-card p-3 shadow-sm partido-card-<%= partido.id %> match-item" data-date="<%= fISO %>" style="<%= isCerrado ? 'opacity: 0.8;' : '' %> <%= partido.estado === 'en_vivo' ? 'border: 1px solid #dc3545;' : '' %>">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="small opacity-75"><i class="far fa-clock me-1"></i> <%= horaEsp %></span>
-                        <% if (isBloqueado) { %>
+
+                        <% if (partido.estado === 'en_vivo') { %>
+                            <span class="badge bg-danger text-white blink" style="font-size: 0.6rem; font-weight: 900;">🔴 EN DIRECTO</span>
+                        <% } else if (isBloqueado) { %>
                             <span class="badge bg-secondary text-white" style="font-size: 0.6rem;">CERRADO</span>
                         <% } %>
+
                         <button onclick="setChat('<%= partido.id %>', '<%= partido.equipo_a %> vs <%= partido.equipo_b %>')" class="btn btn-sm btn-info py-0 px-2 text-dark fw-bold" style="font-size: 0.65rem;">CHAT</button>
                     </div>
                     <div class="row align-items-center text-center my-2">
@@ -347,12 +387,12 @@
                     <form class="mt-2 form-apuesta-ajax">
                         <input type="hidden" name="id_partido" value="<%= partido.id %>">
                         <div class="row g-1">
-                            <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isBloqueado ? 'disabled' : '' %>></div>
-                            <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required <%= isBloqueado ? 'disabled' : '' %>></div>
-                            <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required <%= isBloqueado ? 'disabled' : '' %>></div>
+                            <div class="col-3"><input type="number" name="goles_a" class="form-control-mobile w-100 py-1" placeholder="L" required <%= isCerrado ? 'disabled' : '' %>></div>
+                            <div class="col-3"><input type="number" name="goles_b" class="form-control-mobile w-100 py-1" placeholder="V" required <%= isCerrado ? 'disabled' : '' %>></div>
+                            <div class="col-4"><input type="number" name="apostado" class="form-control-mobile w-100 py-1 text-warning" placeholder="GmC" min="50" required <%= isCerrado ? 'disabled' : '' %>></div>
                             <div class="col-2">
-                                <button type="submit" class="btn btn-bet w-100 py-1" <%= isBloqueado ? 'disabled' : '' %>>
-                                    <i class="fas <%= isBloqueado ? 'fa-lock' : 'fa-check' %>"></i>
+                                <button type="submit" class="btn btn-bet w-100 py-1" <%= isCerrado ? 'disabled' : '' %>>
+                                    <i class="fas <%= isCerrado ? 'fa-lock' : 'fa-check' %>"></i>
                                 </button>
                             </div>
                         </div>
@@ -486,7 +526,6 @@
                 item.classList.add('partido-hidden');
             }
         });
-
         const noApuestasMsg = document.getElementById('no-apuestas-msg');
         if (noApuestasMsg) {
             if (countApostados === 0) {
@@ -536,7 +575,6 @@
                     },
                     body: JSON.stringify({ id_partido, goles_a, goles_b, apostado: cantidad })
                 });
-
                 if (res.status === 401) {
                     const data = await res.json();
                     window.location.href = data.redirect || '/login';
@@ -544,7 +582,6 @@
                 }
 
                 const result = await res.json();
-
                 if (res.ok) {
                     const saldoTop = document.getElementById('user-creditos-top');
                     if (saldoTop && result.nuevoSaldo !== undefined) {
@@ -581,7 +618,6 @@
             }
         });
     });
-
     function renderSingleMessage(m) {
         const container = document.getElementById('chat-messages');
         if (!container) return;
@@ -593,12 +629,12 @@
         div.id = `msg-${m.id}`;
 
         let html = `<span class="msg-user">${m.usuario}</span><div>${m.mensaje}</div>`;
-
         if (isModerator) {
             html += `
         <div class="mt-1 d-flex">
           <button onclick="eliminarMensajeLive('${m.id}')" class="btn-mod-action btn-mod-del" title="Eliminar"><i class="fas fa-trash"></i></button>
-          ${!isMe ? `<button onclick="banearUsuarioLive('${m.usuario}')" class="btn-mod-action btn-mod-ban" title="Banear"><i class="fas fa-user-slash"></i></button>` : ''}
+          ${!isMe ?
+                `<button onclick="banearUsuarioLive('${m.usuario}')" class="btn-mod-action btn-mod-ban" title="Banear"><i class="fas fa-user-slash"></i></button>` : ''}
         </div>`;
         }
 
@@ -627,14 +663,14 @@
             });
             const data = await res.json();
             alert(data.mensaje || data.error);
-        } catch(e) { alert("Error en la petición de baneo"); }
+        } catch(e) { alert("Error en la petición de baneo");
+        }
     }
 
     async function cargarMensajes() {
         const container = document.getElementById('chat-messages');
         if(!container) return;
         container.innerHTML = '<div class="text-center opacity-50 small mt-2">Cargando historial...</div>';
-
         try {
             const res = await fetch(`/chat/${chatActual || ''}`);
             const mensajes = await res.json();
@@ -653,7 +689,8 @@
         const notif = document.getElementById('chat-notification');
         if(!chat) return;
         const isHidden = chat.style.display === 'none' || !chat.style.display;
-        chat.style.display = isHidden ? 'flex' : 'none';
+        chat.style.display = isHidden ?
+            'flex' : 'none';
 
         if(isHidden) {
             cargarMensajes();
@@ -678,7 +715,8 @@
                 const err = await res.json();
                 alert(err.error || "No se pudo enviar");
             }
-        } catch (e) { alert("Error de conexión"); }
+        } catch (e) { alert("Error de conexión");
+        }
     }
 
     socket.on('nuevo_mensaje', (m) => {
@@ -690,21 +728,19 @@
             renderSingleMessage(m);
         }
 
-        if (!isOpen || String(m.id_partido) !== String(chatActual)) {
+        if (!isOpen || String(m.id_partido)
+            !== String(chatActual)) {
             if(notif) notif.style.display = 'block';
         }
     });
-
     socket.on('mensaje_eliminado_en_vivo', (id) => {
         const el = document.getElementById(`msg-${id}`);
         if(el) el.remove();
     });
-
     socket.on('actualizar_bolsa_live', (data) => {
         const el = document.querySelector(`.bolsa-partido-${data.id_partido}`);
         if(el) el.innerText = `${data.nuevo_total} GmC`;
     });
-
 </script>
 </body>
 </html>

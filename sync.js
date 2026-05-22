@@ -165,7 +165,7 @@ async function sincronizarPartidos() {
                 estadoFinal
             ]);
 
-            // 🔥 DETECCIÓN DE CIERRE AUTOMÁTICO 🔥
+            
             // Si el partido acaba de pasar a 'finalizado', disparamos el reparto
             if (estadoFinal === 'finalizado' && estadoPrevio !== 'finalizado') {
                 await ejecutarRepartoAutomatico(id_externo, goles_a, goles_b);
