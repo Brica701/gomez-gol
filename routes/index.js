@@ -46,13 +46,27 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const rA = parseInt(realA);
     const rB = parseInt(realB);
 
+    // 1. PLENO: Acertaste marcador exacto
     if (aA === rA && aB === rB) return 3;
-    if (aA === aB && rA === rB) return 1;
 
-    const tendenciaApuesta = aA > aB ? 'A' : (aA < aB ? 'B' : 'E');
-    const tendenciaReal = rA > rB ? 'A' : (rA < rB ? 'B' : 'E');
+    // 2. ACIERTO DE GANADOR: Acertaste quién ganaba (pero no el marcador)
+    // Esto ocurre si el resultado es ganador (no empate) y el signo coincide
+    const esGanadorA = aA > aB;
+    const esGanadorB = aA < aB;
+    const esEmpateA = aA === aB;
 
-    if (tendenciaApuesta === tendenciaReal) return 2;
+    const esRealGanadorA = rA > rB;
+    const esRealGanadorB = rA < rB;
+    const esRealEmpate = rA === rB;
+
+    if ((esGanadorA && esRealGanadorA) || (esGanadorB && esRealGanadorB)) {
+        return 2;
+    }
+
+    // 3. ACIERTO DE EMPATE: Apostaste a empate y hubo empate
+    if (esEmpateA && esRealEmpate) {
+        return 1;
+    }
 
     return 0;
 }
