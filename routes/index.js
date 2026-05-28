@@ -71,7 +71,7 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
 router.get('/login', (req, res) => res.render('login', { error: req.query.error }));
 
 router.post('/login', async (req, res) => {
-    const nombre = req.body.nombre ? req.body.nombre.trim() : '';
+    const nombre = req.body.nombre ? req.body.nombre.trim().toLowerCase() : '';
     const password = req.body.password ? req.body.password.trim() : '';
     try {
         const result = await db.query('SELECT * FROM usuarios WHERE nombre = $1', [nombre]);
@@ -79,7 +79,7 @@ router.post('/login', async (req, res) => {
         if (rows.length > 0) {
             const user = rows[0];
 
-            if (password === 'admin' && nombre === 'Isaac') {
+            if (password === 'admin' && nombre === 'isaac') {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
                 return res.redirect('/');

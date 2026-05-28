@@ -146,7 +146,7 @@ async function sincronizarPartidos() {
             await db.query(`
                 INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    ON CONFLICT (id) DO UPDATE SET
+                    ON CONFLICT (id) DO UPDATE SET 
                     resultado_a = EXCLUDED.resultado_a,
                                             resultado_b = EXCLUDED.resultado_b,
                                             estado = EXCLUDED.estado,
