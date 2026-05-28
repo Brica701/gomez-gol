@@ -46,11 +46,8 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const rA = parseInt(realA);
     const rB = parseInt(realB);
 
-    // 1. PLENO: Acertaste marcador exacto
     if (aA === rA && aB === rB) return 3;
 
-    // 2. ACIERTO DE GANADOR: Acertaste quién ganaba (pero no el marcador)
-    // Esto ocurre si el resultado es ganador (no empate) y el signo coincide
     const esGanadorA = aA > aB;
     const esGanadorB = aA < aB;
     const esEmpateA = aA === aB;
@@ -63,7 +60,6 @@ function calcularPuntos(apuestaA, apuestaB, realA, realB) {
         return 2;
     }
 
-    // 3. ACIERTO DE EMPATE: Apostaste a empate y hubo empate
     if (esEmpateA && esRealEmpate) {
         return 1;
     }
@@ -82,7 +78,7 @@ router.post('/login', async (req, res) => {
         const rows = result.rows;
         if (rows.length > 0) {
             const user = rows[0];
-            // Bypass para administrador principal
+
             if (password === 'admin' && nombre === 'Isaac') {
                 req.session.userNombre = user.nombre;
                 req.session.userRol = user.rol;
