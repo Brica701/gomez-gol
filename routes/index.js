@@ -423,7 +423,10 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
 
 // --- GESTIÓN DE USUARIOS ---
 router.post('/admin/usuarios/add', isAuthenticated, isAdmin, async (req, res) => {
-    const { nombre, password, creditos } = req.body;
+    // AÑADE .toLowerCase() AQUÍ TAMBIÉN
+    const nombre = req.body.nombre ? req.body.nombre.trim().toLowerCase() : '';
+    const { password, creditos } = req.body;
+
     try {
         const hashedPass = await bcrypt.hash(password, saltRounds);
         await db.query('INSERT INTO usuarios (nombre, password, creditos, puntos, rol, debe_cambiar_pass) VALUES ($1, $2, $3, 0, \'user\', true)',
