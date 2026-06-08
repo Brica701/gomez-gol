@@ -393,7 +393,7 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
         }
 
         if (boteTotal > 0) {
-            const boteRepartible = Math.floor(boteTotal * 0.80);
+            const boteRepartible = Math.floor(boteTotal * 0.95);
             if (ganadoresPleno.length > 0) {
                 const bolsaPleno = ganadoresTendencia.length > 0 ? boteRepartible * 0.70 : boteRepartible;
                 for (let g of ganadoresPleno) {
