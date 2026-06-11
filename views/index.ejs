@@ -741,6 +741,26 @@
         const el = document.querySelector(`.bolsa-partido-${data.id_partido}`);
         if(el) el.innerText = `${data.nuevo_total} GmC`;
     });
+
+    socket.on('actualizar_resultado_live', (data) => {
+
+        const card = document.querySelector(`.partido-card-${data.id_partido}`);
+        if (card) {
+
+            const marcadorA = card.querySelector('.goles-a-display');
+            const marcadorB = card.querySelector('.goles-b-display');
+
+            if (marcadorA) marcadorA.innerText = data.goles_a;
+            if (marcadorB) marcadorB.innerText = data.goles_b;
+
+
+            if (data.estado === 'finalizado') {
+                card.classList.remove('border-danger', 'animate-pulse');
+                card.classList.add('border-secondary');
+
+            }
+        }
+    });
 </script>
 </body>
 </html>
