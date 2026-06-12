@@ -47,6 +47,14 @@ const inicializarDB = async () => {
                 puntos_obtenidos int DEFAULT 0
                 );
 
+            CREATE TABLE IF NOT EXISTS anuncios (
+                                                    id SERIAL PRIMARY KEY,
+                                                    titulo varchar(255) NOT NULL,
+                mensaje text NOT NULL,
+                fecha_creacion timestamp with time zone DEFAULT NOW(),
+                importante boolean DEFAULT false
+                );
+
             CREATE TABLE IF NOT EXISTS chat_mensajes (
                                                          id SERIAL PRIMARY KEY,
                                                          usuario varchar(100),
@@ -64,6 +72,10 @@ const inicializarDB = async () => {
             VALUES ('Isaac', '$2b$10$/FeS0WDDnjfJ7aZ39iLt/e7rJ2vO7lT8o0qiN6eUfzxT.NmyH7kny', 2000, 'admin', false)
                 ON CONFLICT (nombre) DO NOTHING;
         `);
+
+
+
+
         console.log("✅ Servidor conectado a Neon. Tablas listas.");
     } catch (err) {
         console.error("❌ Error inicializando tablas en Neon:", err.message);

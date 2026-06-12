@@ -156,6 +156,9 @@ router.get('/', isAuthenticated, async (req, res) => {
     try {
         const usuarioLogueado = req.session.userNombre;
 
+        // Obtención de anuncios
+        const anuncioRes = await db.query("SELECT * FROM anuncios ORDER BY id DESC LIMIT 1");
+
         const userRes = await db.query(`
             SELECT u.*,
                    COALESCE(r.racha_exacta, 0) as racha_exacta,
@@ -209,6 +212,7 @@ router.get('/', isAuthenticated, async (req, res) => {
             ranking: rankingRes.rows,
             apuestas_usuario: apuestasRes.rows,
             user: userData[0],
+            anuncios: anuncioRes.rows,
             historialPuntos: JSON.stringify(historialRes.rows),
             error: req.query.error,
             success: req.query.success
@@ -549,18 +553,13 @@ router.get('/reglas', isAuthenticated, (req, res) => {
 // --- ANULAR PARTIDO (REVERSIÓN TOTAL) ---
 router.post('/admin/partidos/anular', isAuthenticated, isAdmin, async (req, res) => {
     const { id_partido } = req.body;
-    const client = await db.query;
 
     try {
-
         const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
         const apuestas = resApuestas.rows;
 
-
         for (let ap of apuestas) {
-
             await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [ap.apostado, ap.usuario]);
-
 
             if (ap.puntos_obtenidos > 0 || ap.premio_monedas > 0) {
                 await db.query('UPDATE usuarios SET puntos = puntos - $1, creditos = creditos - $2 WHERE nombre = $3',
@@ -568,9 +567,7 @@ router.post('/admin/partidos/anular', isAuthenticated, isAdmin, async (req, res)
             }
         }
 
-
         await db.query('UPDATE partidos SET estado = \'anulado\' WHERE id = $1', [id_partido]);
-
 
         res.redirect(`/admin?success=Partido anulado y monedas devueltas`);
     } catch (err) {
@@ -578,5 +575,18 @@ router.post('/admin/partidos/anular', isAuthenticated, isAdmin, async (req, res)
         res.status(500).json({ error: "Error al anular: " + err.message });
     }
 });
+
+//Anuncios
+router.post('/admin/anuncios/publicar', isAuthenticated, isAdmin, async (req, res) => {
+    const { titulo, mensaje } = req.body;
+
+    await db.query('INSERT INTO anuncios (titulo, mensaje) VALUES ($1, $2)', [titulo, mensaje]);
+
+    req.app.get('socketio').emit('nuevo_anuncio', { titulo, mensaje });
+
+    res.redirect('/admin?success=Anuncio publicado');
+});
+
+
 
 module.exports = router;
