@@ -20,127 +20,51 @@
             background-size: cover; background-position: center; background-attachment: fixed;
             min-height: 100vh; color: #ffffff !important;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
         }
 
         /* BARRA SUPERIOR */
-        .navbar {
-            background: rgba(0, 0, 0, 0.95) !important;
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 12px 0;
-        }
+        .navbar { background: rgba(0, 0, 0, 0.95) !important; backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border); padding: 12px 0; }
         .navbar-brand { font-size: 1.3rem; color: #fff !important; letter-spacing: 1px; }
-
-        .back-btn {
-            color: white;
-            font-size: 1.2rem;
-            margin-right: 15px;
-            text-decoration: none;
-            transition: 0.3s;
-        }
+        .back-btn { color: white; font-size: 1.2rem; margin-right: 15px; text-decoration: none; transition: 0.3s; }
         .back-btn:hover { color: var(--primary-cyan); }
 
         /* TARJETAS RESUMEN */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-        }
-
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 12px; }
         .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; font-weight: 700; margin-bottom: 4px; color: #fff !important; }
         .stat-value { font-size: 1.5rem; font-weight: 800; color: #fff !important; }
 
-        /* TABLA */
-        .table-main-container {
-            background: #fdfdfd;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            overflow: hidden;
-        }
+        /* TABLA MEJORADA */
+        .table-main-container { background: #ffffff; border-radius: 16px; border: 1px solid var(--glass-border); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .table-header-custom { background: #1a1a1a; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
-        .table-header-custom {
-            background: #1a1a1a;
-            padding: 12px 15px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        /* BUSCADOR */
+        .search-input { background: #333 !important; border: none !important; color: white !important; font-size: 0.8rem; padding: 5px 15px; border-radius: 20px; width: 180px; }
 
-        .scroll-container {
-            max-height: 480px;
-            overflow-y: auto;
-        }
-        .scroll-container::-webkit-scrollbar { width: 4px; }
-        .scroll-container::-webkit-scrollbar-thumb { background: #333; }
+        /* SCROLLABLE AREA */
+        .scrollable-tbody { max-height: 500px; overflow-y: auto; display: block; }
+        .table-responsive { display: block; }
+        .table { color: #333 !important; margin-bottom: 0; width: 100%; table-layout: fixed; }
+        .table thead { display: table; width: 100%; table-layout: fixed; }
+        .table tbody { display: table; width: 100%; table-layout: fixed; }
 
-        .table { color: #000000 !important; margin-bottom: 0; border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-        .table thead th {
-            position: sticky; top: 0;
-            background: #1a1a1a;
-            z-index: 10;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: #888 !important;
-            padding: 12px 10px;
-            border: none;
-            letter-spacing: 1px;
-        }
-        .table tbody td {
-            padding: 14px 10px;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-            color: #000000 !important;
-            font-size: 0.85rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+        .table thead th { background: #f8f9fa; font-size: 0.65rem; text-transform: uppercase; color: #888 !important; padding: 12px 15px; border: none; letter-spacing: 1px; }
+        .table tbody td { padding: 16px 15px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; color: #222 !important; font-size: 0.85rem; }
 
-        /* Anchos de columna fijos */
-        .col-partido { width: 35%; }
-        .col-inv { width: 15%; }
-        .col-apuesta { width: 15%; }
-        .col-final { width: 15%; }
-        .col-premio { width: 20%; }
+        .text-team { font-weight: 700; color: #000 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .text-date { font-size: 0.65rem; color: #999 !important; }
+        .bet-badge { font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; }
+        .win-bg { background: #dcfce7; color: #166534 !important; }
+        .loss-bg { background: #fee2e2; color: #991b1b !important; }
+        .score-pill { background: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-family: monospace; }
+        .premio-text { font-weight: 800; font-size: 0.95rem; }
+        .pts-badge { color: #b8860b; font-size: 0.7rem; font-weight: 700; }
 
-        .text-team { font-weight: 700; color: #000000 !important; white-space: normal; line-height: 1.2; }
-        .text-date { font-size: 0.65rem; color: #666 !important; }
-        .bet-badge { font-weight: 900; font-size: 0.9rem; }
-        .win-color { color: #0088cc !important; }
-        .loss-color { color: #d63031 !important; }
-        .final-pill { background: #f0f0f0; padding: 3px 6px; border-radius: 4px; font-weight: 700; color: #444 !important; display: inline-block; }
-        .pts-badge { color: #b8860b !important; font-size: 0.65rem; font-weight: 800; }
+        @media (max-width: 768px) { .stat-value { font-size: 1.1rem; } }
 
-        @media (max-width: 768px) {
-            .stat-value { font-size: 1.1rem; }
-            .stat-label { font-size: 0.5rem; }
-            .table-responsive { border: none; }
-            .table thead th { font-size: 0.55rem; padding: 10px 5px; }
-            .table tbody td { padding: 10px 5px; font-size: 0.75rem; }
-            .final-pill { padding: 2px 4px; font-size: 0.7rem; }
-            .bet-badge { font-size: 0.8rem; }
-
-            .col-partido { width: 40%; }
-            .col-inv { width: 12%; }
-            .col-apuesta { width: 12%; }
-            .col-final { width: 14%; }
-            .col-premio { width: 22%; }
-        }
-
-        /* FOOTER */
-        .footer-glass {
-            background: rgba(0, 0, 0, 0.9);
-            padding: 2rem 0;
-            margin-top: auto;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .footer-glass p, .footer-glass div { color: #ffffff !important; }
-        .logo-container { background: #fff; border-radius: 8px; width: 130px; height: 60px; display: flex; align-items: center; justify-content: center; }
-        .footer-logo { width: 85%; height: 85%; object-fit: contain; }
+        .footer-glass { background: rgba(0, 0, 0, 0.9); padding: 2rem 0; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); }
+        .logo-container { background: #fff; border-radius: 8px; width: 100px; height: 45px; display: flex; align-items: center; justify-content: center; }
+        .footer-logo { width: 80%; height: 80%; object-fit: contain; }
     </style>
 </head>
 <body>
@@ -151,103 +75,88 @@
             <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
             <a class="navbar-brand fw-bold" href="/">GOMEZ<span style="color: var(--primary-cyan)">-GOL</span></a>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <div class="text-end me-2">
-                <div class="small fw-bold text-uppercase" style="font-size: 0.7rem;"><%= usuario %></div>
-            </div>
-            <img src="https://ui-avatars.com/api/?name=<%= usuario %>&background=00d4ff&color=fff" class="rounded-circle" width="32">
-        </div>
+        <img src="https://ui-avatars.com/api/?name=<%= usuario %>&background=00d4ff&color=fff" class="rounded-circle" width="32">
     </div>
 </nav>
 
 <div class="container mt-4 mb-5">
     <div class="row g-2 mb-4 text-center">
-        <div class="col-4">
-            <div class="glass-card p-3">
-                <div class="stat-label">Invertido</div>
-                <div class="stat-value"><%= resumen.total_apostado || 0 %></div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="glass-card p-3">
-                <div class="stat-label">Ganado</div>
-                <div class="stat-value" style="color: var(--primary-cyan) !important;"><%= (resumen.total_ganado || 0).toLocaleString() %></div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="glass-card p-3">
-                <div class="stat-label">Puntos</div>
-                <div class="stat-value" style="color: var(--gold-accent) !important;"><%= resumen.total_puntos || 0 %></div>
-            </div>
-        </div>
+        <div class="col-4"><div class="glass-card p-3"><div class="stat-label">Invertido</div><div class="stat-value"><%= resumen.total_apostado || 0 %></div></div></div>
+        <div class="col-4"><div class="glass-card p-3"><div class="stat-label">Ganado</div><div class="stat-value" style="color: var(--primary-cyan) !important;"><%= (resumen.total_ganado || 0).toLocaleString() %></div></div></div>
+        <div class="col-4"><div class="glass-card p-3"><div class="stat-label">Puntos</div><div class="stat-value" style="color: var(--gold-accent) !important;"><%= resumen.total_puntos || 0 %></div></div></div>
     </div>
 
     <div class="table-main-container">
         <div class="table-header-custom">
-            <i class="fas fa-chart-line" style="color: var(--primary-cyan)"></i>
-            <span class="fw-bold text-uppercase small text-white" style="letter-spacing: 1px;">Historial de Ganancias</span>
-        </div>
-
-        <div class="scroll-container">
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                    <tr>
-                        <th class="col-partido">Partido</th>
-                        <th class="col-inv text-center">Inv.</th>
-                        <th class="col-apuesta text-center">Apuesta</th>
-                        <th class="col-final text-center">Final</th>
-                        <th class="col-premio text-end">Premio (GmC)</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <%
-                    const ultimosDiez = historial
-                            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-                            .slice(0, 10);
-
-                    if(ultimosDiez.length === 0) {
-                    %>
-                        <tr><td colspan="5" class="text-center py-5">No hay actividad reciente</td></tr>
-                    <% } %>
-                    <% ultimosDiez.forEach(ap => { %>
-                        <tr>
-                            <td class="col-partido">
-                                <div class="text-team text-truncate"><%= ap.equipo_a %> vs <%= ap.equipo_b %></div>
-                                <div class="text-date"><%= ap.fecha %></div>
-                            </td>
-                            <td class="col-inv text-center fw-bold" style="color: #444 !important;"><%= ap.apostado || 0 %></td>
-                            <td class="col-apuesta text-center">
-                                <span class="bet-badge <%= ap.premio_monedas > 0 ? 'win-color' : 'loss-color' %>">
-                                    <%= ap.premio_monedas > 0 ? 'V' : 'L' %>
-                                </span>
-                            </td>
-                            <td class="col-final text-center"><span class="final-pill"><%= ap.resultado_a %>-<%= ap.resultado_b %></span></td>
-                            <td class="col-premio text-end">
-                                <div class="fw-bold <%= ap.premio_monedas > 0 ? 'win-color' : '' %>" style="font-size: 0.9rem;">
-                                    <%= ap.premio_monedas > 0 ? '+' + ap.premio_monedas : '0' %>
-                                </div>
-                                <div class="pts-badge">+<%= ap.puntos_obtenidos || 0 %> PTS</div>
-                            </td>
-                        </tr>
-                    <% }) %>
-                    </tbody>
-                </table>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-history" style="color: var(--primary-cyan)"></i>
+                <span class="fw-bold text-uppercase small text-white" style="letter-spacing: 1px;">Historial</span>
             </div>
+            <input type="text" id="searchInput" class="search-input" placeholder="Buscar partido..." onkeyup="filtrarTabla()">
+        </div>
+        <div class="table-responsive">
+            <table class="table" id="tablaHistorial">
+                <thead>
+                <tr>
+                    <th>Partido</th>
+                    <th class="text-center">Inv.</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Marcador</th>
+                    <th class="text-end">Ganado</th>
+                </tr>
+                </thead>
+                <tbody class="scrollable-tbody">
+                <% historial.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(ap => {
+                    const esGanador = ap.premio_monedas > 0;
+                %>
+                <tr class="fila-partido">
+                    <td>
+                        <div class="text-team"><%= ap.equipo_a %> vs <%= ap.equipo_b %></div>
+                        <div class="text-date"><%= ap.fecha %></div>
+                    </td>
+                    <td class="text-center fw-bold"><%= ap.apostado %></td>
+                    <td class="text-center">
+                        <span class="bet-badge <%= esGanador ? 'win-bg' : 'loss-bg' %>">
+                            <%= esGanador ? 'GANADO' : 'PERDIDO' %>
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="score-pill"><%= (ap.resultado_a !== null) ? `${ap.resultado_a} - ${ap.resultado_b}` : '-' %></span>
+                    </td>
+                    <td class="text-end">
+                        <div class="premio-text <%= esGanador ? 'text-primary' : 'text-muted' %>">
+                            <%= esGanador ? '+' + ap.premio_monedas : '0' %>
+                        </div>
+                        <div class="pts-badge"><%= ap.puntos_obtenidos || 0 %> PTS</div>
+                    </td>
+                </tr>
+                <% }) %>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <footer class="footer-glass">
-    <div class="container">
-        <div class="d-flex justify-content-center flex-wrap gap-3 mb-4">
+    <div class="container text-center">
+        <div class="d-flex justify-content-center flex-wrap gap-3 mb-3">
             <div class="logo-container"><img src="/images/cuadrotek.png" class="footer-logo"></div>
             <div class="logo-container"><img src="/images/gomez_moreno_logo (1)-nobg.svg" class="footer-logo"></div>
             <div class="logo-container"><img src="/images/mercasat.png" class="footer-logo"></div>
         </div>
-        <div class="text-center"><p class="small opacity-50 mb-0">© 2026 GOMEZ-GOL | ISAAC CRUZ</p></div>
+        <p class="small opacity-50 mb-0">© 2026 GOMEZ-GOL | ISAAC CRUZ</p>
     </div>
 </footer>
 
+<script>
+    function filtrarTabla() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let filas = document.getElementsByClassName("fila-partido");
+        for (let i = 0; i < filas.length; i++) {
+            let texto = filas[i].textContent.toLowerCase();
+            filas[i].style.display = texto.includes(input) ? "" : "none";
+        }
+    }
+</script>
 </body>
 </html>

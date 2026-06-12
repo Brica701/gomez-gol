@@ -19,15 +19,7 @@
         body { background: var(--bg-deep); color: #ffffff !important; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         h1, h2, h3, h4, h5, h6, p, span, label, td, th, strong, small, div { color: #ffffff !important; }
 
-        /* AJUSTES RESPONSIVE CARDS */
-        .stat-card {
-            background: var(--card-bg);
-            border-left: 4px solid var(--accent);
-            border-radius: 10px;
-            padding: 1rem;
-            height: 100%;
-            transition: transform 0.2s;
-        }
+        .stat-card { background: var(--card-bg); border-left: 4px solid var(--accent); border-radius: 10px; padding: 1rem; height: 100%; transition: transform 0.2s; }
         @media (min-width: 768px) { .stat-card { padding: 1.5rem; } }
 
         .text-warning-bold { color: #fbbf24 !important; font-weight: bold; }
@@ -35,53 +27,24 @@
         .text-info-bold { color: #7dd3fc !important; font-weight: bold; }
         .text-muted-white { color: #cbd5e1 !important; opacity: 0.8; }
 
-        /* TABS RESPONSIVE */
         .nav-tabs { border-bottom: 2px solid #334155; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
-        .nav-tabs .nav-link {
-            color: #ffffff !important; border: none; padding: 0.8rem 1rem;
-            font-weight: 600; opacity: 0.6; white-space: nowrap;
-        }
-        .nav-tabs .nav-link.active {
-            background: transparent; color: var(--accent) !important;
-            border-bottom: 3px solid var(--accent); opacity: 1;
-        }
+        .nav-tabs .nav-link { color: #ffffff !important; border: none; padding: 0.8rem 1rem; font-weight: 600; opacity: 0.6; white-space: nowrap; }
+        .nav-tabs .nav-link.active { background: transparent; color: var(--accent) !important; border-bottom: 3px solid var(--accent); opacity: 1; }
 
-        .card-admin {
-            background: var(--card-bg);
-            border: 1px solid #334155;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        /* TABLAS Y FORMULARIOS */
+        .card-admin { background: var(--card-bg); border: 1px solid #334155; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .table { color: #ffffff !important; font-size: 0.9rem; }
         .table thead th { color: var(--accent) !important; background: rgba(255,255,255,0.05); border: none; white-space: nowrap; }
         .table td { border-color: #334155 !important; background: transparent !important; }
 
-        .input-dark {
-            background: #0f172a !important;
-            border: 1px solid #475569 !important;
-            color: #ffffff !important;
-            font-weight: bold;
-        }
+        .input-dark { background: #0f172a !important; border: 1px solid #475569 !important; color: #ffffff !important; font-weight: bold; }
+        .status-pill { font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
 
-        .status-pill {
-            font-size: 0.65rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            text-transform: uppercase;
-        }
+        .accordion-item { background: var(--card-bg) !important; border: 1px solid #334155 !important; }
+        .accordion-button { background: #2d3748 !important; color: white !important; font-weight: bold; }
+        .accordion-button:not(.collapsed) { color: var(--accent) !important; }
 
-        /* NOTIFICACIONES */
-        #live-toast-container {
-            position: fixed; top: 10px; right: 10px; z-index: 9999; width: 280px;
-        }
-
-        @media (max-width: 576px) {
-            h2 { font-size: 1.4rem; }
-            .btn-action { width: 100%; margin-bottom: 5px; }
-            .table-responsive { border: 0; }
-        }
+        #live-toast-container { position: fixed; top: 10px; right: 10px; z-index: 9999; width: 280px; }
+        @media (max-width: 576px) { h2 { font-size: 1.4rem; } .btn-action { width: 100%; margin-bottom: 5px; } .table-responsive { border: 0; } }
     </style>
 </head>
 <body class="p-2 p-md-4">
@@ -89,7 +52,6 @@
 <div id="live-toast-container"></div>
 
 <div class="container-fluid">
-    <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="mb-0 fw-bold text-info-bold"><i class="fas fa-user-shield me-2"></i>Control Gómez Moreno</h2>
@@ -103,37 +65,13 @@
         </div>
     </div>
 
-    <!-- Stats Grid -->
     <div class="row g-2 g-md-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="stat-card">
-                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Usuarios</small>
-                <h3 class="fw-bold mb-0" id="stat-usuarios"><%= usuarios.length %></h3>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card" style="border-color: var(--warning);">
-                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Activos</small>
-                <h3 class="fw-bold mb-0 text-warning-bold" id="stat-partidos"><%= partidos.filter(p => p.estado !== 'finalizado').length %></h3>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card" style="border-color: var(--success);">
-                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">En Juego</small>
-                <h4 class="fw-bold mb-0 text-success-bold">
-                    <span id="stat-dinero"><%= transacciones.filter(t => t.puntos_obtenidos === 0).reduce((acc, t) => acc + t.apostado, 0) %></span> <small style="font-size: 0.5em;">GmC</small>
-                </h4>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card" style="border-color: #a855f7;">
-                <small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Apuestas</small>
-                <h3 class="fw-bold mb-0" style="color: #d8b4fe !important;" id="stat-apuestas"><%= transacciones.length %></h3>
-            </div>
-        </div>
+        <div class="col-6 col-md-3"><div class="stat-card"><small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Usuarios</small><h3 class="fw-bold mb-0" id="stat-usuarios"><%= usuarios.length %></h3></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card" style="border-color: var(--warning);"><small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Activos</small><h3 class="fw-bold mb-0 text-warning-bold" id="stat-partidos"><%= partidos.filter(p => p.estado !== 'finalizado').length %></h3></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card" style="border-color: var(--success);"><small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">En Juego</small><h4 class="fw-bold mb-0 text-success-bold"><span id="stat-dinero"><%= transacciones.filter(t => t.puntos_obtenidos === 0).reduce((acc, t) => acc + t.apostado, 0) %></span> <small style="font-size: 0.5em;">GmC</small></h4></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card" style="border-color: #a855f7;"><small class="text-muted-white d-block mb-1 text-uppercase" style="font-size: 0.65rem;">Apuestas</small><h3 class="fw-bold mb-0" style="color: #d8b4fe !important;" id="stat-apuestas"><%= transacciones.length %></h3></div></div>
     </div>
 
-    <!-- Tabs Nav -->
     <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-usuarios"><i class="fas fa-users me-1"></i> Seguridad</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partidos"><i class="fas fa-futbol me-1"></i> Partidos</button></li>
@@ -141,7 +79,7 @@
     </ul>
 
     <div class="tab-content">
-        <!-- Tab Usuarios -->
+        <!-- Pestaña Usuarios -->
         <div class="tab-pane fade show active" id="tab-usuarios">
             <div class="card card-admin p-3 p-md-4 mb-4 border-0">
                 <h5 class="mb-3 fw-bold text-info-bold small"><i class="fas fa-user-plus me-2"></i>Nuevo Jugador</h5>
@@ -152,43 +90,20 @@
                     <div class="col-12 col-md-2"><button type="submit" class="btn btn-info w-100 fw-bold text-white">Añadir</button></div>
                 </form>
             </div>
-
             <div class="card card-admin border-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead>
-                        <tr>
-                            <th>Usuario</th>
-                            <th style="width: 100px;">GmC</th>
-                            <th style="width: 100px;">PTS</th>
-                            <th>Reset Pass</th>
-                            <th class="text-center">Acción</th>
-                        </tr>
-                        </thead>
+                        <thead><tr><th>Usuario</th><th>GmC</th><th>PTS</th><th>Reset Pass</th><th class="text-center">Acción</th></tr></thead>
                         <tbody>
                         <% usuarios.forEach(u => { %>
                             <tr>
+                                <td><div class="fw-bold"><%= u.nombre %></div><% if(u.debe_cambiar_pass) { %><span class="status-pill bg-warning text-dark">Reset Pendiente</span><% } %></td>
                                 <form action="/admin/usuarios/edit" method="POST">
                                     <input type="hidden" name="nombre" value="<%= u.nombre %>">
-                                    <td>
-                                        <div class="fw-bold"><%= u.nombre %></div>
-                                        <% if(u.debe_cambiar_pass) { %>
-                                            <span class="status-pill bg-warning text-dark">Reset Pendiente</span>
-                                        <% } %>
-                                    </td>
                                     <td><input type="number" name="creditos" class="form-control input-dark form-control-sm" value="<%= u.creditos %>"></td>
                                     <td><input type="number" name="puntos" class="form-control input-dark form-control-sm" value="<%= u.puntos %>"></td>
                                     <td><input type="password" name="nueva_password" class="form-control input-dark form-control-sm" placeholder="Nueva..."></td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-save"></i></button>
-                                </form>
-                                <form action="/admin/usuarios/delete" method="POST" onsubmit="return confirm('¿Eliminar?')">
-                                    <input type="hidden" name="nombre" value="<%= u.nombre %>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                </form>
-                </div>
-                </td>
+                                    <td><div class="d-flex justify-content-center gap-1"><button type="submit" class="btn btn-success btn-sm"><i class="fas fa-save"></i></button></form><form action="/admin/usuarios/delete" method="POST" onsubmit="return confirm('¿Eliminar?')"><input type="hidden" name="nombre" value="<%= u.nombre %>"><button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form></div></td>
                 </tr>
                 <% }) %>
                 </tbody>
@@ -197,26 +112,30 @@
         </div>
     </div>
 
-    <!-- Tab Partidos -->
+    <!-- Pestaña Partidos -->
     <div class="tab-pane fade" id="tab-partidos">
         <div class="card card-admin p-0 border-0">
             <% partidos.forEach(p => { %>
                 <div class="p-3 border-bottom border-secondary <%= p.estado === 'finalizado' ? 'bg-dark bg-opacity-25' : '' %>">
                     <form action="/admin/finalizar-partido" method="POST" class="row align-items-center g-2">
                         <input type="hidden" name="id_partido" value="<%= p.id %>">
-                        <div class="col-12 col-md-4">
-                            <div class="fw-bold text-white"><%= p.equipo_a %> vs <%= p.equipo_b %></div>
-                            <small class="text-info-bold" style="font-size: 0.7rem;"><%= new Date(p.fecha_partido).toLocaleString() %></small>
-                        </div>
+                        <div class="col-12 col-md-3"><div class="fw-bold text-white"><%= p.equipo_a %> vs <%= p.equipo_b %></div><small class="text-info-bold" style="font-size: 0.7rem;"><%= new Date(p.fecha_partido).toLocaleString() %></small></div>
+
                         <% if(p.estado !== 'finalizado') { %>
                             <div class="col-4 col-md-2"><input type="number" name="resultado_a" class="form-control input-dark text-center" placeholder="L"></div>
                             <div class="col-4 col-md-2"><input type="number" name="resultado_b" class="form-control input-dark text-center" placeholder="V"></div>
-                            <div class="col-4 col-md-4">
-                                <button type="submit" class="btn btn-warning w-100 btn-sm fw-bold py-2"><i class="fas fa-check"></i> Finalizar</button>
+                            <div class="col-4 col-md-5">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-warning flex-grow-1 btn-sm fw-bold py-2"><i class="fas fa-check"></i> Finalizar</button>
+                                </div>
                             </div>
                         <% } else { %>
-                            <div class="col-12 col-md-8 text-md-end">
-                                <span class="badge bg-success w-100 w-md-auto py-2">FINAL: <%= p.resultado_a %> - <%= p.resultado_b %></span>
+                            <div class="col-12 col-md-9 text-md-end d-flex justify-content-end align-items-center gap-3">
+                                <span class="badge bg-success py-2">FINAL: <%= p.resultado_a %> - <%= p.resultado_b %></span>
+                                <form action="/admin/partidos/anular" method="POST" onsubmit="return confirm('¿Seguro que quieres ANULAR este partido? Se devolverán las monedas a todos los jugadores.');" class="m-0">
+                                    <input type="hidden" name="id_partido" value="<%= p.id %>">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-undo"></i> Anular</button>
+                                </form>
                             </div>
                         <% } %>
                     </form>
@@ -225,33 +144,44 @@
         </div>
     </div>
 
-    <!-- Tab Historial -->
+    <!-- Pestaña Historial -->
     <div class="tab-pane fade" id="tab-transacciones">
-        <div class="card card-admin border-0">
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Partido</th>
-                        <th class="text-center">Porra</th>
-                        <th>Premio</th>
-                        <th>Estado</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <% transacciones.forEach(t => { %>
-                        <tr>
-                            <td class="fw-bold text-info-bold small"><%= t.usuario %></td>
-                            <td class="text-white small"><%= t.equipo_a %> vs <%= t.equipo_b %></td>
-                            <td class="text-center"><span class="badge bg-light text-dark fw-bold"><%= t.goles_a %>-<%= t.goles_b %></span></td>
-                            <td class="fw-bold text-success-bold small"><%= t.puntos_obtenidos %> pts</td>
-                            <td><span class="status-pill <%= t.puntos_obtenidos > 0 ? 'bg-success' : 'bg-warning' %> text-white"><%= t.puntos_obtenidos > 0 ? 'OK' : '...' %></span></td>
-                        </tr>
-                    <% }) %>
-                    </tbody>
-                </table>
+        <div class="mb-3">
+            <input type="text" id="busquedaPartidos" class="form-control input-dark" placeholder="🔍 Buscar partido (ej: Real Madrid)..." onkeyup="filtrarPartidos()">
+        </div>
+        <div class="accordion" id="accordionPartidos">
+            <% partidos.forEach((p, index) => {
+                const apuestasPartido = transacciones.filter(t => t.id_partido === p.id);
+            %>
+            <div class="accordion-item partido-container" data-equipo="<%= (p.equipo_a + ' ' + p.equipo_b).toLowerCase() %>">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= index %>">
+                        <%= p.equipo_a %> vs <%= p.equipo_b %> &nbsp; | &nbsp; <small class="text-warning"><%= apuestasPartido.length %> apuestas</small>
+                    </button>
+                </h2>
+                <div id="collapse<%= index %>" class="accordion-collapse collapse" data-bs-parent="#accordionPartidos">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead><tr><th>Jugador</th><th class="text-center">Porra</th><th class="text-center">Apostado</th><th class="text-center">Premio</th><th class="text-center">Ganado (GmC)</th><th class="text-center">Estado</th></tr></thead>
+                                <tbody>
+                                <% if(apuestasPartido.length > 0) { apuestasPartido.forEach(t => { %>
+                                    <tr>
+                                        <td class="fw-bold text-info-bold"><%= t.usuario %></td>
+                                        <td class="text-center"><span class="badge bg-secondary"><%= t.goles_a %> - <%= t.goles_b %></span></td>
+                                        <td class="text-center text-warning"><%= t.apostado %> GmC</td>
+                                        <td class="text-center text-success-bold"><%= t.puntos_obtenidos > 0 ? t.puntos_obtenidos + ' pts' : '-' %></td>
+                                        <td class="text-center fw-bold text-success"><%= (t.premio_monedas && t.premio_monedas > 0) ? '+' + t.premio_monedas : '0' %> GmC</td>
+                                        <td class="text-center"><span class="status-pill <%= t.puntos_obtenidos > 0 ? 'bg-success' : (t.puntos_obtenidos === null ? 'bg-secondary' : 'bg-warning') %>"><%= t.puntos_obtenidos > 0 ? 'Ganador' : (t.puntos_obtenidos === null ? 'Pendiente' : 'Perdido') %></span></td>
+                                    </tr>
+                                <% }); } else { %><tr><td colspan="6" class="text-center text-muted">No hay apuestas para este partido.</td></tr><% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <% }) %>
         </div>
     </div>
 </div>
@@ -262,23 +192,28 @@
 <script>
     const socket = io();
 
+    function filtrarPartidos() {
+        const busqueda = document.getElementById('busquedaPartidos').value.toLowerCase();
+        const items = document.querySelectorAll('.partido-container');
+        items.forEach(item => {
+            const equipos = item.getAttribute('data-equipo');
+            item.style.display = equipos.includes(busqueda) ? '' : 'none';
+        });
+    }
+
     function showAdminNotify(msg, type = 'info') {
         const container = document.getElementById('live-toast-container');
         const toast = document.createElement('div');
         toast.className = `alert alert-${type} shadow border-0 p-2 mb-2 small animate__animated animate__fadeInRight`;
         toast.innerHTML = `<i class="fas fa-bell me-1"></i> ${msg}`;
         container.appendChild(toast);
-        setTimeout(() => {
-            toast.remove();
-        }, 4000);
+        setTimeout(() => { toast.remove(); }, 4000);
     }
 
     socket.on('actualizar_bolsa_live', (data) => {
         showAdminNotify(`Apuesta en #${data.id_partido}: +${data.monto_apuesta} GmC`, 'warning');
         const elDinero = document.getElementById('stat-dinero');
-        if(elDinero) {
-            elDinero.innerText = parseInt(elDinero.innerText) + data.monto_apuesta;
-        }
+        if(elDinero) elDinero.innerText = parseInt(elDinero.innerText) + data.monto_apuesta;
     });
 
     socket.on('nuevo_usuario_registrado', () => {

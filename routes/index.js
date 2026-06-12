@@ -546,4 +546,37 @@ router.get('/reglas', isAuthenticated, (req, res) => {
     });
 });
 
+// --- ANULAR PARTIDO (REVERSIÓN TOTAL) ---
+router.post('/admin/partidos/anular', isAuthenticated, isAdmin, async (req, res) => {
+    const { id_partido } = req.body;
+    const client = await db.query;
+
+    try {
+
+        const resApuestas = await db.query('SELECT * FROM apuestas WHERE id_partido = $1', [id_partido]);
+        const apuestas = resApuestas.rows;
+
+
+        for (let ap of apuestas) {
+
+            await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [ap.apostado, ap.usuario]);
+
+
+            if (ap.puntos_obtenidos > 0 || ap.premio_monedas > 0) {
+                await db.query('UPDATE usuarios SET puntos = puntos - $1, creditos = creditos - $2 WHERE nombre = $3',
+                    [ap.puntos_obtenidos || 0, ap.premio_monedas || 0, ap.usuario]);
+            }
+        }
+
+
+        await db.query('UPDATE partidos SET estado = \'anulado\' WHERE id = $1', [id_partido]);
+
+
+        res.redirect(`/admin?success=Partido anulado y monedas devueltas`);
+    } catch (err) {
+        console.error("Error al anular partido:", err);
+        res.status(500).json({ error: "Error al anular: " + err.message });
+    }
+});
+
 module.exports = router;

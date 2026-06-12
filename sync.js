@@ -1,6 +1,9 @@
 const axios = require('axios');
 const db = require('./db');
 
+// --- CONFIGURACIÓN API ---
+const API_TOKEN = 'a269175e09f54abf8055c45698e3099f'; // Tu token
+
 // --- UTILIDAD: CALCULAR PUNTOS (3, 2, 1) ---
 function calcularPuntos(apuestaA, apuestaB, realA, realB) {
     const aA = parseInt(apuestaA);
@@ -97,7 +100,10 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
 async function sincronizarPartidos() {
     try {
 
-        const response = await axios.get(`https://api.football-data.org/...`);
+        const response = await axios.get(`https://api.football-data.org/v4/competitions/WC/matches`, {
+            headers: { 'X-Auth-Token': API_TOKEN }
+        });
+
         const partidos = response.data.matches;
 
         for (const p of partidos) {
@@ -106,7 +112,6 @@ async function sincronizarPartidos() {
             const { rows } = await db.query('SELECT estado, resultado_a, resultado_b FROM partidos WHERE id = $1', [id_externo]);
             const pActual = rows[0];
 
-
             const goles_a = p.score.fullTime.home;
             const goles_b = p.score.fullTime.away;
 
@@ -114,26 +119,25 @@ async function sincronizarPartidos() {
             if (p.status === 'FINISHED' || p.status === 'AWARDED') estadoFinal = 'finalizado';
             else if (p.status === 'IN_PLAY' || p.status === 'LIVE') estadoFinal = 'en_vivo';
 
-            // Si hay goles reales, actualizamos; si no, solo actualizamos estado
             const resA = goles_a !== null ? goles_a : (pActual?.resultado_a || 0);
             const resB = goles_b !== null ? goles_b : (pActual?.resultado_b || 0);
 
             await db.query(`
                 INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                ON CONFLICT (id) DO UPDATE SET 
-                resultado_a = EXCLUDED.resultado_a,
-                resultado_b = EXCLUDED.resultado_b,
-                estado = EXCLUDED.estado
+                    ON CONFLICT (id) DO UPDATE SET
+                    resultado_a = EXCLUDED.resultado_a,
+                                            resultado_b = EXCLUDED.resultado_b,
+                                            estado = EXCLUDED.estado
             `, [id_externo, p.homeTeam.shortName, p.awayTeam.shortName, p.homeTeam.id, p.awayTeam.id, p.utcDate, resA, resB, estadoFinal]);
-
 
             if (estadoFinal === 'finalizado' && (pActual?.estado !== 'finalizado') && goles_a !== null) {
                 await ejecutarRepartoAutomatico(id_externo, resA, resB);
             }
         }
     } catch (error) {
-        console.error("❌ Error:", error.message);
+        // Mejora: log detallado del error
+        console.error("❌ Error en sincronización:", error.response?.data?.message || error.message);
     }
 }
 
