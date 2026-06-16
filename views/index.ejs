@@ -446,9 +446,9 @@
             <h5 class="mb-3 text-uppercase fw-bold opacity-75 small">🏆 Ranking</h5>
             <div class="card glass-card overflow-hidden border-0 mb-4">
                 <table class="table table-dark table-sm mb-0">
-                    <tbody>
-                    <% ranking.slice(0, 10).forEach((u, i) => { %>
-                        <tr>
+                    <tbody id="tabla-ranking-body">
+                    <% ranking.forEach((u, i) => { %>
+                        <tr class="ranking-row pagina-<%= Math.floor(i / 10) %> <%= i >= 10 ? 'd-none' : '' %>">
                             <td class="ps-3 py-2 text-info fw-bold"><%= i + 1 %></td>
                             <td class="text-uppercase small"><%= u.nombre %></td>
                             <td class="text-end pe-3 fw-bold"><%= u.puntos %> <small class="opacity-50">pts</small></td>
@@ -456,6 +456,18 @@
                     <% }) %>
                     </tbody>
                 </table>
+
+                <% if (ranking.length > 10) { %>
+                    <div class="d-flex justify-content-between align-items-center p-2">
+                        <button class="btn btn-sm btn-link text-info" onclick="cambiarPagina(-1)" id="btn-atras" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="info-pag" class="small opacity-50">Pág 1</span>
+                        <button class="btn btn-sm btn-link text-info" onclick="cambiarPagina(1)" id="btn-adelante">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                <% } %>
             </div>
             <a href="/logout" class="btn btn-outline-danger btn-sm w-100 mb-3">CERRAR SESIÓN</a>
         </div>
@@ -789,6 +801,23 @@
             }
         }
     });
+
+
+    let pagActual = 0;
+    const totalPags = Math.ceil(<%= ranking.length %> / 10);
+
+    function cambiarPagina(dir) {
+
+        document.querySelectorAll(`.pagina-${pagActual}`).forEach(el => el.classList.add('d-none'));
+
+        pagActual += dir;
+
+        document.querySelectorAll(`.pagina-${pagActual}`).forEach(el => el.classList.remove('d-none'));
+
+        document.getElementById('info-pag').innerText = `Pág ${pagActual + 1}`;
+        document.getElementById('btn-atras').disabled = (pagActual === 0);
+        document.getElementById('btn-adelante').disabled = (pagActual === totalPags - 1);
+    }
 </script>
 </body>
 </html>
