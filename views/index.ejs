@@ -194,6 +194,25 @@
             z-index: 1002;
         }
 
+        /* Estilo para la fila resaltada (tu usuario) */
+        .table-info {
+            background-color: rgba(255, 193, 7, 0.2) !important; /* El color de fondo que prefieras */
+            border-left: 4px solid #ffc107;
+        }
+
+        /* FORZAR COLOR NEGRO en posición y nombre cuando la fila está resaltada */
+        .table-info td,
+        .table-info td.text-info,
+        .table-info td.text-uppercase {
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        /* Aseguramos que el badge se lea bien sobre el fondo */
+        .table-info .badge {
+            color: #fff !important;
+        }
+
         @media (max-width: 576px) {
             #chat-container { width: 94%;
                 right: 3%; bottom: 80px; height: 75vh; }
@@ -448,9 +467,11 @@
                 <table class="table table-dark table-sm mb-0">
                     <tbody id="tabla-ranking-body">
                     <% ranking.forEach((u, i) => { %>
-                        <tr class="ranking-row pagina-<%= Math.floor(i / 10) %> <%= i >= 10 ? 'd-none' : '' %>">
+                        <tr class="ranking-row pagina-<%= Math.floor(i / 10) %> <%= i >= 10 ? 'd-none' : '' %> <%= u.nombre === user.nombre ? 'table-info' : '' %>">
                             <td class="ps-3 py-2 text-info fw-bold"><%= i + 1 %></td>
-                            <td class="text-uppercase small"><%= u.nombre %></td>
+                            <td class="text-uppercase small">
+                                <%= u.nombre %> <%- u.nombre === user.nombre ? '<span class="badge bg-info text-dark ms-1">TÚ</span>' : '' %>
+                            </td>
                             <td class="text-end pe-3 fw-bold"><%= u.puntos %> <small class="opacity-50">pts</small></td>
                         </tr>
                     <% }) %>
