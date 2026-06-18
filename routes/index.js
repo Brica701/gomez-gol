@@ -345,6 +345,12 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
     if (isNaN(resA) || isNaN(resB)) return res.redirect(`/admin?error=Resultados inválidos`);
 
     try {
+
+        const partidoCheck = await db.query('SELECT estado FROM partidos WHERE id = $1', [id_partido]);
+        if (!partidoCheck.rows[0] || partidoCheck.rows[0].estado === 'finalizado') {
+            return res.redirect('/admin?error=Este partido ya fue finalizado previamente');
+        }
+
         await db.query('UPDATE partidos SET resultado_a = $1, resultado_b = $2, estado = \'finalizado\' WHERE id = $3', [resA, resB, id_partido]);
 
         const resBote = await db.query('SELECT SUM(apostado) as total FROM apuestas WHERE id_partido = $1', [id_partido]);
@@ -383,9 +389,18 @@ router.post('/admin/finalizar-partido', isAuthenticated, isAdmin, async (req, re
                 racha_ganador = 0;
             }
 
+            // 1. Actualizamos el estado de rachas y el registro de la apuesta individual
             await db.query('UPDATE rachas SET racha_exacta = $1, racha_ganador = $2 WHERE usuario_nombre = $3', [racha_exacta, racha_ganador, ap.usuario]);
             await db.query('UPDATE apuestas SET puntos_obtenidos = $1, premio_monedas = $2 WHERE id = $3', [puntosFinales, bonusGarantizado, ap.id]);
-            await db.query('UPDATE usuarios SET puntos = puntos + $1, creditos = creditos + $2 WHERE nombre = $3', [puntosFinales, bonusGarantizado, ap.usuario]);
+
+
+            if (puntosFinales > 0) {
+                await db.query('UPDATE usuarios SET puntos = puntos + $1 WHERE nombre = $2', [puntosFinales, ap.usuario]);
+            }
+
+            if (bonusGarantizado > 0) {
+                await db.query('UPDATE usuarios SET creditos = creditos + $1 WHERE nombre = $2', [bonusGarantizado, ap.usuario]);
+            }
 
             if (puntosFinales === 3) {
                 ganadoresPleno.push(ap);
