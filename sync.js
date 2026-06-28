@@ -97,9 +97,9 @@ async function ejecutarRepartoAutomatico(id_partido, resA, resB) {
 }
 
 // --- FUNCIÓN PRINCIPAL DE SINCRONIZACIÓN ---
+// --- FUNCIÓN PRINCIPAL DE SINCRONIZACIÓN ---
 async function sincronizarPartidos() {
     try {
-
         const response = await axios.get(`https://api.football-data.org/v4/competitions/WC/matches`, {
             headers: { 'X-Auth-Token': API_TOKEN }
         });
@@ -122,23 +122,32 @@ async function sincronizarPartidos() {
             const resA = goles_a !== null ? goles_a : (pActual?.resultado_a || 0);
             const resB = goles_b !== null ? goles_b : (pActual?.resultado_b || 0);
 
+            // --- CORRECCIÓN: Protección contra nulos en fases eliminatorias ---
+            const nombreA = p.homeTeam ? p.homeTeam.shortName : "TBD (Ganador)";
+            const nombreB = p.awayTeam ? p.awayTeam.shortName : "TBD (Ganador)";
+            const idApiA = p.homeTeam ? p.homeTeam.id : null;
+            const idApiB = p.awayTeam ? p.awayTeam.id : null;
+            // ------------------------------------------------------------------
+
             await db.query(`
                 INSERT INTO partidos (id, equipo_a, equipo_b, id_api_a, id_api_b, fecha_partido, resultado_a, resultado_b, estado)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    ON CONFLICT (id) DO UPDATE SET
-                    resultado_a = EXCLUDED.resultado_a,
-                                            resultado_b = EXCLUDED.resultado_b,
-                                            estado = EXCLUDED.estado
-            `, [id_externo, p.homeTeam.shortName, p.awayTeam.shortName, p.homeTeam.id, p.awayTeam.id, p.utcDate, resA, resB, estadoFinal]);
+                ON CONFLICT (id) DO UPDATE SET
+                resultado_a = EXCLUDED.resultado_a,
+                resultado_b = EXCLUDED.resultado_b,
+                estado = EXCLUDED.estado,
+                equipo_a = EXCLUDED.equipo_a,
+                equipo_b = EXCLUDED.equipo_b
+            `, [id_externo, nombreA, nombreB, idApiA, idApiB, p.utcDate, resA, resB, estadoFinal]);
 
             if (estadoFinal === 'finalizado' && (pActual?.estado !== 'finalizado') && goles_a !== null) {
                 await ejecutarRepartoAutomatico(id_externo, resA, resB);
             }
         }
     } catch (error) {
-        // Mejora: log detallado del error
         console.error("❌ Error en sincronización:", error.response?.data?.message || error.message);
     }
+
 }
 
 module.exports = sincronizarPartidos;
